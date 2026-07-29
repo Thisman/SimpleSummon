@@ -5,6 +5,8 @@ namespace SimpleSummon.Runtime
 {
     public sealed class OrbitCameraController : MonoBehaviour
     {
+        private const int ObstructionBufferSize = 16;
+
         [SerializeField] private Transform target;
         [SerializeField] private InputActionReference lookAction;
         [SerializeField, Min(0f)] private float distance = 5f;
@@ -18,6 +20,7 @@ namespace SimpleSummon.Runtime
 
         private float yaw;
         private float pitch = 20f;
+        private readonly RaycastHit[] obstructionHits = new RaycastHit[ObstructionBufferSize];
 
         private void Awake()
         {
@@ -75,19 +78,33 @@ namespace SimpleSummon.Runtime
 
         private float GetCameraDistance(Vector3 focusPoint, Vector3 cameraDirection)
         {
-            if (!Physics.SphereCast(
-                    focusPoint,
-                    collisionRadius,
-                    cameraDirection,
-                    out RaycastHit hit,
-                    distance,
-                    obstructionLayers,
-                    QueryTriggerInteraction.Ignore))
+            int hitCount = Physics.SphereCastNonAlloc(
+                focusPoint,
+                collisionRadius,
+                cameraDirection,
+                obstructionHits,
+                distance,
+                obstructionLayers,
+                QueryTriggerInteraction.Ignore);
+
+            float nearestDistance = distance;
+            bool obstructionFound = false;
+
+            for (int i = 0; i < hitCount; i++)
             {
-                return distance;
+                RaycastHit hit = obstructionHits[i];
+                if (hit.collider == null || hit.collider.transform.IsChildOf(target))
+                {
+                    continue;
+                }
+
+                nearestDistance = Mathf.Min(nearestDistance, hit.distance);
+                obstructionFound = true;
             }
 
-            return Mathf.Max(0f, hit.distance - collisionClearance);
+            return obstructionFound
+                ? Mathf.Max(0f, nearestDistance - collisionClearance)
+                : distance;
         }
 
         private static void LockCursor()
