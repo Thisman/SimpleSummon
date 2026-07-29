@@ -156,8 +156,14 @@ namespace SimpleSummon.Runtime
             transform.SetPositionAndRotation(destination.position, destination.rotation);
             characterController.enabled = true;
 
-            horizontalVelocity = Vector3.zero;
+            StopHorizontalMovement();
             verticalVelocity = 0f;
+        }
+
+        public void StopHorizontalMovement()
+        {
+            horizontalVelocity = Vector3.zero;
+            animator.SetFloat(MovementSpeedId, 0f);
         }
 
         public void ApplyAttackDamage()

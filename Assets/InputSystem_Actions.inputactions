@@ -476,6 +476,34 @@
             ]
         },
         {
+            "name": "Instruction",
+            "id": "6a17df9d-2628-4737-b5fd-bb18dc170fea",
+            "actions": [
+                {
+                    "name": "Exit",
+                    "type": "Button",
+                    "id": "2774c929-13f3-4c89-be49-80d2df331475",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "31863f24-15ed-4512-b769-fca2007b21d5",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Exit",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
             "name": "UI",
             "id": "272f6d14-89ba-496f-b7ff-215263d3219f",
             "actions": [

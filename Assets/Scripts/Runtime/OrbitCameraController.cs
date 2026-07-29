@@ -20,6 +20,7 @@ namespace SimpleSummon.Runtime
 
         private float yaw;
         private float pitch = 20f;
+        private bool skipEscapeFrame;
         private readonly RaycastHit[] obstructionHits = new RaycastHit[ObstructionBufferSize];
 
         private void Awake()
@@ -32,6 +33,7 @@ namespace SimpleSummon.Runtime
         private void OnEnable()
         {
             lookAction.action.Enable();
+            skipEscapeFrame = true;
             LockCursor();
         }
 
@@ -42,7 +44,11 @@ namespace SimpleSummon.Runtime
 
         private void Update()
         {
-            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            if (skipEscapeFrame)
+            {
+                skipEscapeFrame = false;
+            }
+            else if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
