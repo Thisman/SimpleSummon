@@ -10,6 +10,8 @@ namespace SimpleSummon.Runtime
     [RequireComponent(typeof(Rigidbody))]
     public sealed class EnemyController : MonoBehaviour, IDamageable
     {
+        private const float MinimumAttackDirectionDot = 0.70710678f;
+
         private enum State
         {
             Idle,
@@ -140,7 +142,12 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            if (Vector3.Distance(transform.position, player.transform.position) <= settings.AttackRadius)
+            Vector3 direction = player.transform.position - transform.position;
+            direction.y = 0f;
+
+            if (direction.sqrMagnitude <= settings.AttackRadius * settings.AttackRadius &&
+                direction.sqrMagnitude > 0f &&
+                Vector3.Dot(transform.forward, direction.normalized) >= MinimumAttackDirectionDot)
             {
                 player.TakeDamage(model.Damage);
             }

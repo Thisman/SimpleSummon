@@ -10,6 +10,8 @@ namespace SimpleSummon.Runtime
     [RequireComponent(typeof(PlayerSettings))]
     public sealed class PlayerController : MonoBehaviour, IDamageable
     {
+        private const float MinimumAttackDirectionDot = 0.70710678f;
+
         private static readonly int MovementSpeedId = Animator.StringToHash("MovementSpeed");
         private static readonly int AttackId = Animator.StringToHash("Attack");
         private static readonly int DeathId = Animator.StringToHash("Death");
@@ -157,9 +159,7 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            Ray ray = new Ray(cameraTransform.position, cameraTransform.forward);
-            if (TryGetAimedTarget(ray, out IDamageable target, out RaycastHit hit) &&
-                Vector3.Distance(transform.position, hit.point) <= settings.AttackRange)
+            if (TryGetClosestAttackTarget(out IDamageable target))
             {
                 target.TakeDamage(model.Damage);
             }
@@ -196,6 +196,51 @@ namespace SimpleSummon.Runtime
             model.RestoreHealth();
             animator.SetTrigger(RespawnId);
             Respawned?.Invoke();
+        }
+
+        private bool TryGetClosestAttackTarget(out IDamageable target)
+        {
+            Collider[] colliders = Physics.OverlapSphere(
+                transform.position,
+                settings.AttackRange,
+                settings.AttackMask,
+                QueryTriggerInteraction.Ignore);
+
+            target = null;
+            float closestSqrDistance = float.PositiveInfinity;
+            float attackRangeSqr = settings.AttackRange * settings.AttackRange;
+
+            foreach (Collider collider in colliders)
+            {
+                if (collider.transform.IsChildOf(transform))
+                {
+                    continue;
+                }
+
+                IDamageable candidate = collider.GetComponentInParent<IDamageable>();
+                if (candidate == null || candidate.IsDead)
+                {
+                    continue;
+                }
+
+                Component candidateComponent = (Component)candidate;
+                Vector3 direction = candidateComponent.transform.position - transform.position;
+                direction.y = 0f;
+
+                float sqrDistance = direction.sqrMagnitude;
+                if (sqrDistance <= 0f ||
+                    sqrDistance > attackRangeSqr ||
+                    Vector3.Dot(transform.forward, direction.normalized) < MinimumAttackDirectionDot ||
+                    sqrDistance >= closestSqrDistance)
+                {
+                    continue;
+                }
+
+                target = candidate;
+                closestSqrDistance = sqrDistance;
+            }
+
+            return target != null;
         }
 
         private void FaceAimedTarget()
