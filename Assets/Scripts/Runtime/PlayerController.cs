@@ -1,3 +1,4 @@
+using System;
 using SimpleSummon.Application;
 using SimpleSummon.Domain;
 using UnityEngine;
@@ -7,13 +8,17 @@ namespace SimpleSummon.Runtime
 {
     [RequireComponent(typeof(CharacterController))]
     [RequireComponent(typeof(PlayerSettings))]
-    public sealed class PlayerController : MonoBehaviour
+    public sealed class PlayerController : MonoBehaviour, IDamageable
     {
         private static readonly int MovementSpeedId = Animator.StringToHash("MovementSpeed");
         private static readonly int AttackId = Animator.StringToHash("Attack");
+        private static readonly int DeathId = Animator.StringToHash("Death");
+        private static readonly int RespawnId = Animator.StringToHash("Respawn");
 
         [SerializeField] private Transform cameraTransform;
         [SerializeField] private Animator animator;
+        [SerializeField] private Transform spawnPoint;
+        [SerializeField] private DamageFlash damageFlash;
         [SerializeField] private InputActionReference moveAction;
         [SerializeField] private InputActionReference jumpAction;
         [SerializeField] private InputActionReference attackAction;
@@ -22,15 +27,25 @@ namespace SimpleSummon.Runtime
 
         private CharacterController characterController;
         private UnitModel model;
+        private PlayerSettings settings;
         private Vector3 horizontalVelocity;
         private float verticalVelocity;
+
+        public event Action Respawned;
+
+        public bool IsDead => model.IsDead;
 
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
 
-            PlayerSettings settings = GetComponent<PlayerSettings>();
-            model = new UnitModel(settings.MovementSpeed, settings.JumpHeight, settings.AttackDelay);
+            settings = GetComponent<PlayerSettings>();
+            model = new UnitModel(
+                settings.MovementSpeed,
+                settings.JumpHeight,
+                settings.AttackDelay,
+                settings.Damage,
+                settings.MaximumHealth);
         }
 
         private void OnEnable()
@@ -49,6 +64,11 @@ namespace SimpleSummon.Runtime
 
         private void Update()
         {
+            if (model.IsDead)
+            {
+                return;
+            }
+
             Vector2 input = moveAction.action.ReadValue<Vector2>();
             Vector3 direction = UnitMovementService.GetCameraRelativeDirection(
                 input,
@@ -72,6 +92,7 @@ namespace SimpleSummon.Runtime
 
             if (UnitAttackService.TryAttack(model, Time.deltaTime, attackRequested))
             {
+                FaceAimedTarget();
                 animator.SetTrigger(AttackId);
             }
         }
@@ -137,6 +158,100 @@ namespace SimpleSummon.Runtime
 
             horizontalVelocity = Vector3.zero;
             verticalVelocity = 0f;
+        }
+
+        public void ApplyAttackDamage()
+        {
+            if (model.IsDead)
+            {
+                return;
+            }
+
+            Ray ray = new Ray(cameraTransform.position, cameraTransform.forward);
+            if (TryGetAimedTarget(ray, out IDamageable target, out RaycastHit hit) &&
+                Vector3.Distance(transform.position, hit.point) <= settings.AttackRange)
+            {
+                target.TakeDamage(model.Damage);
+            }
+        }
+
+        public void TakeDamage(float damage)
+        {
+            if (model.IsDead)
+            {
+                return;
+            }
+
+            model.TakeDamage(damage);
+            damageFlash.Play();
+            if (!model.IsDead)
+            {
+                return;
+            }
+
+            horizontalVelocity = Vector3.zero;
+            verticalVelocity = 0f;
+            animator.SetFloat(MovementSpeedId, 0f);
+            animator.SetTrigger(DeathId);
+        }
+
+        public void CompleteDeathAnimation()
+        {
+            if (!model.IsDead)
+            {
+                return;
+            }
+
+            Teleport(spawnPoint);
+            model.RestoreHealth();
+            animator.SetTrigger(RespawnId);
+            Respawned?.Invoke();
+        }
+
+        private void FaceAimedTarget()
+        {
+            Ray ray = new Ray(cameraTransform.position, cameraTransform.forward);
+            if (!TryGetAimedTarget(ray, out IDamageable target, out _))
+            {
+                return;
+            }
+
+            Component targetComponent = (Component)target;
+            Vector3 direction = targetComponent.transform.position - transform.position;
+            direction.y = 0f;
+            if (direction.sqrMagnitude > 0f)
+            {
+                transform.rotation = Quaternion.LookRotation(direction);
+            }
+        }
+
+        private bool TryGetAimedTarget(
+            Ray ray,
+            out IDamageable target,
+            out RaycastHit targetHit)
+        {
+            RaycastHit[] hits = Physics.RaycastAll(
+                ray,
+                settings.AimRayDistance,
+                settings.AttackMask,
+                QueryTriggerInteraction.Ignore);
+            Array.Sort(hits, (left, right) => left.distance.CompareTo(right.distance));
+
+            foreach (RaycastHit hit in hits)
+            {
+                if (hit.transform.IsChildOf(transform))
+                {
+                    continue;
+                }
+
+                target = hit.collider.GetComponentInParent<IDamageable>();
+                targetHit = hit;
+                return target != null && !target.IsDead;
+            }
+
+            target = null;
+            targetHit = default;
+            return false;
         }
     }
 }
