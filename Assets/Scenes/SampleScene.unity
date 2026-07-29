@@ -748,7 +748,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: fb7a17d9a2742854f80584d29a154056, type: 3}
       propertyPath: m_Name
-      value: Mage
+      value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: fb7a17d9a2742854f80584d29a154056, type: 3}
       propertyPath: m_Controller
@@ -800,6 +800,7 @@ MonoBehaviour:
   moveAction: {fileID: 11400000, guid: 865e990617779db41a69a4c3735f7746, type: 2}
   jumpAction: {fileID: 11400000, guid: 80f5ec83c2768a54c86828ca8e4fe6c3, type: 2}
   rotationSpeed: 12
+  momentumDuration: 0.5
 --- !u!114 &71018424
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3759,6 +3760,11 @@ MonoBehaviour:
   sensitivity: 0.12
   minimumPitch: -20
   maximumPitch: 65
+  obstructionLayers:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  collisionRadius: 0.3
+  collisionClearance: 0.05
 --- !u!1001 &337373244
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -16,9 +16,11 @@ namespace SimpleSummon.Runtime
         [SerializeField] private InputActionReference moveAction;
         [SerializeField] private InputActionReference jumpAction;
         [SerializeField, Min(0f)] private float rotationSpeed = 12f;
+        [SerializeField, Min(0f)] private float momentumDuration = 0.2f;
 
         private CharacterController characterController;
         private UnitModel model;
+        private Vector3 horizontalVelocity;
         private float verticalVelocity;
 
         private void Awake()
@@ -51,9 +53,12 @@ namespace SimpleSummon.Runtime
 
             UpdateVerticalVelocity();
             Move(direction);
-            Rotate(direction);
+            Rotate(horizontalVelocity);
 
-            animator.SetFloat(MovementSpeedId, direction.magnitude, 0.1f, Time.deltaTime);
+            float normalizedMovementSpeed = model.MovementSpeed > 0f
+                ? horizontalVelocity.magnitude / model.MovementSpeed
+                : 0f;
+            animator.SetFloat(MovementSpeedId, normalizedMovementSpeed, 0.1f, Time.deltaTime);
         }
 
         private void UpdateVerticalVelocity()
@@ -73,7 +78,24 @@ namespace SimpleSummon.Runtime
 
         private void Move(Vector3 direction)
         {
-            Vector3 velocity = direction * model.MovementSpeed;
+            if (direction.sqrMagnitude > 0f)
+            {
+                horizontalVelocity = direction * model.MovementSpeed;
+            }
+            else if (momentumDuration <= 0f)
+            {
+                horizontalVelocity = Vector3.zero;
+            }
+            else
+            {
+                float deceleration = model.MovementSpeed / momentumDuration;
+                horizontalVelocity = Vector3.MoveTowards(
+                    horizontalVelocity,
+                    Vector3.zero,
+                    deceleration * Time.deltaTime);
+            }
+
+            Vector3 velocity = horizontalVelocity;
             velocity.y = verticalVelocity;
             characterController.Move(velocity * Time.deltaTime);
         }
