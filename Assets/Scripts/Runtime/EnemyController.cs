@@ -179,6 +179,7 @@ namespace SimpleSummon.Runtime
         {
             if (state == State.Dead)
             {
+                deathInteractionRoot.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
                 deathInteractionRoot.SetActive(true);
             }
         }

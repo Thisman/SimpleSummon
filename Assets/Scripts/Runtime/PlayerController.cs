@@ -26,12 +26,17 @@ namespace SimpleSummon.Runtime
         [SerializeField] private InputActionReference attackAction;
         [SerializeField, Min(0f)] private float momentumDuration = 0.2f;
         [SerializeField, Min(0f)] private float rotationSpeed = 720f;
+        [SerializeField, Min(0f)] private float damageVignetteDuration = 0.35f;
+        [SerializeField, Range(0f, 1f)] private float damageVignetteOpacity = 0.65f;
 
         private CharacterController characterController;
+        private OrbitCameraController orbitCamera;
         private UnitModel model;
         private PlayerSettings settings;
+        private Texture2D damageVignette;
         private Vector3 horizontalVelocity;
         private float verticalVelocity;
+        private float damageVignetteTime;
 
         public event Action Respawned;
 
@@ -40,6 +45,8 @@ namespace SimpleSummon.Runtime
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
+            orbitCamera = cameraTransform.GetComponent<OrbitCameraController>();
+            damageVignette = CreateDamageVignette();
 
             settings = GetComponent<PlayerSettings>();
             model = new UnitModel(
@@ -64,8 +71,15 @@ namespace SimpleSummon.Runtime
             attackAction.action.Disable();
         }
 
+        private void OnDestroy()
+        {
+            Destroy(damageVignette);
+        }
+
         private void Update()
         {
+            damageVignetteTime = Mathf.Max(0f, damageVignetteTime - Time.unscaledDeltaTime);
+
             if (model.IsDead)
             {
                 return;
@@ -184,6 +198,8 @@ namespace SimpleSummon.Runtime
 
             model.TakeDamage(damage);
             damageFlash.Play();
+            orbitCamera.PlayDamageShake();
+            damageVignetteTime = damageVignetteDuration;
             if (!model.IsDead)
             {
                 return;
@@ -193,6 +209,23 @@ namespace SimpleSummon.Runtime
             verticalVelocity = 0f;
             animator.SetFloat(MovementSpeedId, 0f);
             animator.SetTrigger(DeathId);
+        }
+
+        private void OnGUI()
+        {
+            if (damageVignetteTime <= 0f || damageVignetteDuration <= 0f)
+            {
+                return;
+            }
+
+            float normalizedTime = damageVignetteTime / damageVignetteDuration;
+            float pulse = Mathf.Sin(normalizedTime * Mathf.PI * 0.5f);
+            GUI.color = new Color(1f, 1f, 1f, pulse * damageVignetteOpacity);
+            GUI.DrawTexture(
+                new Rect(0f, 0f, Screen.width, Screen.height),
+                damageVignette,
+                ScaleMode.StretchToFill);
+            GUI.color = Color.white;
         }
 
         public void CompleteDeathAnimation()
@@ -251,6 +284,38 @@ namespace SimpleSummon.Runtime
             }
 
             return target != null;
+        }
+
+        private static Texture2D CreateDamageVignette()
+        {
+            const int textureSize = 128;
+            Texture2D texture = new Texture2D(
+                textureSize,
+                textureSize,
+                TextureFormat.RGBA32,
+                false);
+            Color[] pixels = new Color[textureSize * textureSize];
+
+            for (int y = 0; y < textureSize; y++)
+            {
+                for (int x = 0; x < textureSize; x++)
+                {
+                    float normalizedX = (x + 0.5f) / textureSize * 2f - 1f;
+                    float normalizedY = (y + 0.5f) / textureSize * 2f - 1f;
+                    float distance = Mathf.Max(
+                        Mathf.Abs(normalizedX),
+                        Mathf.Abs(normalizedY));
+                    float alpha = Mathf.SmoothStep(
+                        0f,
+                        1f,
+                        Mathf.InverseLerp(0.82f, 1f, distance));
+                    pixels[y * textureSize + x] = new Color(0.75f, 0f, 0f, alpha);
+                }
+            }
+
+            texture.SetPixels(pixels);
+            texture.Apply(false, true);
+            return texture;
         }
 
         private void FaceAimedTarget()

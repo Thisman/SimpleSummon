@@ -16,10 +16,13 @@ namespace SimpleSummon.Runtime
         [SerializeField] private LayerMask obstructionLayers = ~0;
         [SerializeField, Min(0f)] private float collisionRadius = 0.3f;
         [SerializeField, Min(0f)] private float collisionClearance = 0.05f;
+        [SerializeField, Min(0f)] private float damageShakeDuration = 0.2f;
+        [SerializeField, Min(0f)] private float damageShakeStrength = 0.08f;
 
         private float yaw;
         private float pitch;
         private float focusHeight;
+        private float damageShakeTime;
 
         private void Awake()
         {
@@ -86,7 +89,19 @@ namespace SimpleSummon.Runtime
                 }
             }
 
+            if (damageShakeTime > 0f)
+            {
+                damageShakeTime = Mathf.Max(0f, damageShakeTime - Time.unscaledDeltaTime);
+                float strength = damageShakeStrength * damageShakeTime / damageShakeDuration;
+                idealPosition += Random.insideUnitSphere * strength;
+            }
+
             transform.SetPositionAndRotation(idealPosition, rotation);
+        }
+
+        public void PlayDamageShake()
+        {
+            damageShakeTime = damageShakeDuration;
         }
 
         private void OnApplicationFocus(bool hasFocus)
