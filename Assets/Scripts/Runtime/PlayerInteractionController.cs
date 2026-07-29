@@ -60,6 +60,7 @@ namespace SimpleSummon.Runtime
 
             interactionTriggered = true;
             currentActor.Interact(gameObject);
+            ClearTarget();
         }
 
         private InteractiveActor FindActor()

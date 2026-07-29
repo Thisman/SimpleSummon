@@ -26,6 +26,7 @@ namespace SimpleSummon.Runtime
         [SerializeField] private PlayerController player;
         [SerializeField] private Animator animator;
         [SerializeField] private DamageFlash damageFlash;
+        [SerializeField] private GameObject deathInteractionRoot;
 
         private EnemySettings settings;
         private NavMeshAgent agent;
@@ -49,6 +50,7 @@ namespace SimpleSummon.Runtime
             homePosition = transform.position;
             agent.speed = model.MovementSpeed;
             agent.stoppingDistance = settings.AttackRadius;
+            deathInteractionRoot.SetActive(false);
         }
 
         private void OnEnable()
@@ -170,7 +172,7 @@ namespace SimpleSummon.Runtime
         {
             if (state == State.Dead)
             {
-                Destroy(gameObject);
+                deathInteractionRoot.SetActive(true);
             }
         }
 

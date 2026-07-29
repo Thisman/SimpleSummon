@@ -22,7 +22,6 @@ namespace SimpleSummon.Runtime
         [SerializeField] private InputActionReference moveAction;
         [SerializeField] private InputActionReference jumpAction;
         [SerializeField] private InputActionReference attackAction;
-        [SerializeField, Min(0f)] private float rotationSpeed = 12f;
         [SerializeField, Min(0f)] private float momentumDuration = 0.2f;
 
         private CharacterController characterController;
@@ -77,7 +76,6 @@ namespace SimpleSummon.Runtime
 
             UpdateVerticalVelocity();
             Move(direction);
-            Rotate(horizontalVelocity);
             UpdateAttack();
 
             float normalizedMovementSpeed = model.MovementSpeed > 0f
@@ -134,20 +132,6 @@ namespace SimpleSummon.Runtime
             Vector3 velocity = horizontalVelocity;
             velocity.y = verticalVelocity;
             characterController.Move(velocity * Time.deltaTime);
-        }
-
-        private void Rotate(Vector3 direction)
-        {
-            if (direction.sqrMagnitude <= 0f)
-            {
-                return;
-            }
-
-            Quaternion targetRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                targetRotation,
-                rotationSpeed * Time.deltaTime);
         }
 
         public void Teleport(Transform destination)

@@ -7,7 +7,7 @@ namespace SimpleSummon.Runtime
     {
         [SerializeField] private PlayerController playerController;
         [SerializeField] private PlayerInteractionController interactionController;
-        [SerializeField] private OrbitCameraController orbitCameraController;
+        [SerializeField] private FirstPersonLookController lookController;
         [SerializeField] private Transform cameraTransform;
         [SerializeField] private InputActionReference playerAction;
         [SerializeField] private InputActionReference exitAction;
@@ -16,6 +16,9 @@ namespace SimpleSummon.Runtime
 
         private InstructionInteraction activeInstruction;
         private bool[] initialForceRenderingOff;
+        private Vector3 gameplayCameraLocalPosition;
+        private Quaternion gameplayCameraLocalRotation;
+        private Vector3 gameplayCameraLocalScale;
 
         private void Awake()
         {
@@ -24,6 +27,10 @@ namespace SimpleSummon.Runtime
             {
                 initialForceRenderingOff[i] = playerRenderers[i].forceRenderingOff;
             }
+
+            gameplayCameraLocalPosition = cameraTransform.localPosition;
+            gameplayCameraLocalRotation = cameraTransform.localRotation;
+            gameplayCameraLocalScale = cameraTransform.localScale;
 
             exitAction.action.actionMap.Disable();
             exitHint.SetActive(false);
@@ -56,7 +63,7 @@ namespace SimpleSummon.Runtime
             playerAction.action.actionMap.Disable();
             playerController.StopHorizontalMovement();
             interactionController.enabled = false;
-            orbitCameraController.enabled = false;
+            lookController.enabled = false;
 
             cameraTransform.SetPositionAndRotation(
                 instruction.CameraPosition,
@@ -77,7 +84,11 @@ namespace SimpleSummon.Runtime
             SetPlayerRenderingOff(false);
             activeInstruction = null;
 
-            orbitCameraController.enabled = true;
+            cameraTransform.localPosition = gameplayCameraLocalPosition;
+            cameraTransform.localRotation = gameplayCameraLocalRotation;
+            cameraTransform.localScale = gameplayCameraLocalScale;
+
+            lookController.enabled = true;
             interactionController.enabled = true;
             playerAction.action.actionMap.Enable();
         }
