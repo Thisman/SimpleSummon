@@ -1931,6 +1931,7 @@ MonoBehaviour:
   jumpAction: {fileID: 11400000, guid: 80f5ec83c2768a54c86828ca8e4fe6c3, type: 2}
   attackAction: {fileID: 11400000, guid: f5741c79c9ca40b4982c0983cae17d07, type: 2}
   momentumDuration: 0.5
+  rotationSpeed: 720
 --- !u!114 &71018424
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7996,8 +7997,15 @@ MonoBehaviour:
   cameraPivot: {fileID: 1022735276}
   lookAction: {fileID: 11400000, guid: 9868743e6e1890143b1d85c468bc64e0, type: 2}
   sensitivity: 0.12
-  minimumPitch: -80
-  maximumPitch: 80
+  minimumPitch: -35
+  maximumPitch: 65
+  distance: 5
+  shoulderOffset: {x: 0.75, y: 0.25, z: 0}
+  obstructionLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  collisionRadius: 0.3
+  collisionClearance: 0.05
 --- !u!4 &344690699 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 9181623134346800366, guid: fb7a17d9a2742854f80584d29a154056, type: 3}

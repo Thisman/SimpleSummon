@@ -7,7 +7,7 @@ namespace SimpleSummon.Runtime
     {
         [SerializeField] private PlayerController playerController;
         [SerializeField] private PlayerInteractionController interactionController;
-        [SerializeField] private FirstPersonLookController lookController;
+        [SerializeField] private OrbitCameraController lookController;
         [SerializeField] private Transform cameraTransform;
         [SerializeField] private InputActionReference playerAction;
         [SerializeField] private InputActionReference exitAction;
