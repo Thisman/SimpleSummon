@@ -6,8 +6,10 @@ namespace SimpleSummon.Runtime
     {
         [SerializeField, Min(0f)] private float movementSpeed = 4f;
         [SerializeField, Min(0f)] private float jumpHeight = 1.5f;
+        [SerializeField, Min(0f)] private float attackDelay = 0.75f;
 
         public float MovementSpeed => movementSpeed;
         public float JumpHeight => jumpHeight;
+        public float AttackDelay => attackDelay;
     }
 }

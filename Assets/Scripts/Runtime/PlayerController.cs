@@ -10,11 +10,13 @@ namespace SimpleSummon.Runtime
     public sealed class PlayerController : MonoBehaviour
     {
         private static readonly int MovementSpeedId = Animator.StringToHash("MovementSpeed");
+        private static readonly int AttackId = Animator.StringToHash("Attack");
 
         [SerializeField] private Transform cameraTransform;
         [SerializeField] private Animator animator;
         [SerializeField] private InputActionReference moveAction;
         [SerializeField] private InputActionReference jumpAction;
+        [SerializeField] private InputActionReference attackAction;
         [SerializeField, Min(0f)] private float rotationSpeed = 12f;
         [SerializeField, Min(0f)] private float momentumDuration = 0.2f;
 
@@ -28,19 +30,21 @@ namespace SimpleSummon.Runtime
             characterController = GetComponent<CharacterController>();
 
             PlayerSettings settings = GetComponent<PlayerSettings>();
-            model = new UnitModel(settings.MovementSpeed, settings.JumpHeight);
+            model = new UnitModel(settings.MovementSpeed, settings.JumpHeight, settings.AttackDelay);
         }
 
         private void OnEnable()
         {
             moveAction.action.Enable();
             jumpAction.action.Enable();
+            attackAction.action.Enable();
         }
 
         private void OnDisable()
         {
             moveAction.action.Disable();
             jumpAction.action.Disable();
+            attackAction.action.Disable();
         }
 
         private void Update()
@@ -54,11 +58,22 @@ namespace SimpleSummon.Runtime
             UpdateVerticalVelocity();
             Move(direction);
             Rotate(horizontalVelocity);
+            UpdateAttack();
 
             float normalizedMovementSpeed = model.MovementSpeed > 0f
                 ? horizontalVelocity.magnitude / model.MovementSpeed
                 : 0f;
             animator.SetFloat(MovementSpeedId, normalizedMovementSpeed, 0.1f, Time.deltaTime);
+        }
+
+        private void UpdateAttack()
+        {
+            bool attackRequested = attackAction.action.WasPressedThisFrame();
+
+            if (UnitAttackService.TryAttack(model, Time.deltaTime, attackRequested))
+            {
+                animator.SetTrigger(AttackId);
+            }
         }
 
         private void UpdateVerticalVelocity()
