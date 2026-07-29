@@ -113,5 +113,15 @@ namespace SimpleSummon.Runtime
                 targetRotation,
                 rotationSpeed * Time.deltaTime);
         }
+
+        public void Teleport(Transform destination)
+        {
+            characterController.enabled = false;
+            transform.SetPositionAndRotation(destination.position, destination.rotation);
+            characterController.enabled = true;
+
+            horizontalVelocity = Vector3.zero;
+            verticalVelocity = 0f;
+        }
     }
 }
