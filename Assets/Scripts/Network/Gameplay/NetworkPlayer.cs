@@ -119,6 +119,17 @@ namespace SimpleSummon.Network
             }
         }
 
+        public void HideSceneObject(NetworkObject target)
+        {
+            if (!IsServer || target == null || !target.InScenePlaced)
+            {
+                return;
+            }
+
+            SetSceneObjectVisible(target, false);
+            SetSceneObjectVisibleRpc(target, false);
+        }
+
         public void SetInventoryQuantity(string itemName, int quantity)
         {
             if (IsSpawned && !IsServer)
@@ -181,6 +192,17 @@ namespace SimpleSummon.Network
             }
         }
 
+        [Rpc(SendTo.ClientsAndHost)]
+        private void SetSceneObjectVisibleRpc(
+            NetworkObjectReference targetReference,
+            bool visible)
+        {
+            if (targetReference.TryGet(out NetworkObject target))
+            {
+                SetSceneObjectVisible(target, visible);
+            }
+        }
+
         private void ExecuteInteraction(NetworkObject target, float maximumDistance)
         {
             if (target == null ||
@@ -210,6 +232,19 @@ namespace SimpleSummon.Network
             serverMoveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
             serverJumpRequested |= jumpRequested;
             serverAttackRequested |= attackRequested;
+        }
+
+        private static void SetSceneObjectVisible(NetworkObject target, bool visible)
+        {
+            foreach (Renderer targetRenderer in target.GetComponentsInChildren<Renderer>(true))
+            {
+                targetRenderer.enabled = visible;
+            }
+
+            foreach (Collider targetCollider in target.GetComponentsInChildren<Collider>(true))
+            {
+                targetCollider.enabled = visible;
+            }
         }
 
         private void HandleHealthChanged(float _, float value)

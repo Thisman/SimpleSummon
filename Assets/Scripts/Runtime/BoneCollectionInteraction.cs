@@ -1,4 +1,5 @@
 using Unity.Netcode;
+using SimpleSummon.Network;
 using UnityEngine;
 
 namespace SimpleSummon.Runtime
@@ -19,7 +20,8 @@ namespace SimpleSummon.Runtime
             NetworkObject networkObject = GetComponentInParent<NetworkObject>();
             if (networkObject != null && networkObject.IsSpawned)
             {
-                networkObject.Despawn(true);
+                NetworkPlayer networkPlayer = interactor.GetComponent<NetworkPlayer>();
+                networkPlayer?.HideSceneObject(networkObject);
             }
             else
             {
