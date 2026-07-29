@@ -12,6 +12,9 @@ namespace SimpleSummon.Runtime
         [SerializeField, Min(0f)] private float sensitivity = 0.12f;
         [SerializeField] private float minimumPitch = -20f;
         [SerializeField] private float maximumPitch = 65f;
+        [SerializeField] private LayerMask obstructionLayers = Physics.DefaultRaycastLayers;
+        [SerializeField, Min(0f)] private float collisionRadius = 0.3f;
+        [SerializeField, Min(0f)] private float collisionClearance = 0.05f;
 
         private float yaw;
         private float pitch = 20f;
@@ -62,10 +65,29 @@ namespace SimpleSummon.Runtime
         {
             Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
             Vector3 focusPoint = target.position + Vector3.up * targetHeight;
+            Vector3 cameraDirection = -(rotation * Vector3.forward);
+            float cameraDistance = GetCameraDistance(focusPoint, cameraDirection);
 
             transform.SetPositionAndRotation(
-                focusPoint - rotation * Vector3.forward * distance,
+                focusPoint + cameraDirection * cameraDistance,
                 rotation);
+        }
+
+        private float GetCameraDistance(Vector3 focusPoint, Vector3 cameraDirection)
+        {
+            if (!Physics.SphereCast(
+                    focusPoint,
+                    collisionRadius,
+                    cameraDirection,
+                    out RaycastHit hit,
+                    distance,
+                    obstructionLayers,
+                    QueryTriggerInteraction.Ignore))
+            {
+                return distance;
+            }
+
+            return Mathf.Max(0f, hit.distance - collisionClearance);
         }
 
         private static void LockCursor()
