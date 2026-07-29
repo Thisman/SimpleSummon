@@ -1,4 +1,6 @@
 using SimpleSummon.Domain;
+using SimpleSummon.Network;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -25,7 +27,6 @@ namespace SimpleSummon.Runtime
         private static readonly int AttackId = Animator.StringToHash("Attack");
         private static readonly int DeathId = Animator.StringToHash("Death");
 
-        [SerializeField] private PlayerController player;
         [SerializeField] private Animator animator;
         [SerializeField] private DamageFlash damageFlash;
         [SerializeField] private GameObject deathInteractionRoot;
@@ -35,12 +36,15 @@ namespace SimpleSummon.Runtime
         private UnitModel model;
         private Vector3 homePosition;
         private State state;
+        private PlayerController player;
+        private NetworkEnemyState networkState;
 
         public bool IsDead => model.IsDead;
 
         private void Awake()
         {
             settings = GetComponent<EnemySettings>();
+            networkState = GetComponent<NetworkEnemyState>();
             agent = GetComponent<NavMeshAgent>();
             model = new UnitModel(
                 settings.MovementSpeed,
@@ -57,27 +61,45 @@ namespace SimpleSummon.Runtime
 
         private void OnEnable()
         {
-            player.Respawned += ForgetPlayer;
+            if (networkState != null)
+            {
+                networkState.StateChanged += ApplyReplicatedState;
+            }
+            TrySelectPlayer();
         }
 
         private void OnDisable()
         {
-            player.Respawned -= ForgetPlayer;
+            if (networkState != null)
+            {
+                networkState.StateChanged -= ApplyReplicatedState;
+            }
+            SetPlayer(null);
         }
 
         private void Update()
         {
+            if (NetworkManager.Singleton != null &&
+                NetworkManager.Singleton.IsListening &&
+                !NetworkManager.Singleton.IsServer)
+            {
+                return;
+            }
+
             if (state == State.Dead || !agent.isOnNavMesh)
             {
                 return;
             }
 
+            TrySelectPlayer();
             model.UpdateAttackCooldown(Time.deltaTime);
 
-            float distanceToPlayer = Vector3.Distance(transform.position, player.transform.position);
+            float distanceToPlayer = player != null
+                ? Vector3.Distance(transform.position, player.transform.position)
+                : float.PositiveInfinity;
             float distanceFromHome = Vector3.Distance(transform.position, homePosition);
 
-            if (player.IsDead || distanceFromHome > settings.ReturnRadius)
+            if (player == null || player.IsDead || distanceFromHome > settings.ReturnRadius)
             {
                 BeginReturn();
             }
@@ -86,7 +108,9 @@ namespace SimpleSummon.Runtime
             {
                 case State.Idle:
                     StopMoving();
-                    if (!player.IsDead && distanceToPlayer <= settings.DetectionRadius)
+                    if (player != null &&
+                        !player.IsDead &&
+                        distanceToPlayer <= settings.DetectionRadius)
                     {
                         state = State.Chase;
                     }
@@ -137,7 +161,14 @@ namespace SimpleSummon.Runtime
 
         public void ApplyAttackDamage()
         {
-            if (state != State.Attack || player.IsDead)
+            if (NetworkManager.Singleton != null &&
+                NetworkManager.Singleton.IsListening &&
+                !NetworkManager.Singleton.IsServer)
+            {
+                return;
+            }
+
+            if (state != State.Attack || player == null || player.IsDead)
             {
                 return;
             }
@@ -155,6 +186,13 @@ namespace SimpleSummon.Runtime
 
         public void TakeDamage(float damage)
         {
+            if (NetworkManager.Singleton != null &&
+                NetworkManager.Singleton.IsListening &&
+                !NetworkManager.Singleton.IsServer)
+            {
+                return;
+            }
+
             if (model.IsDead)
             {
                 return;
@@ -173,14 +211,47 @@ namespace SimpleSummon.Runtime
             GetComponent<CapsuleCollider>().enabled = false;
             animator.SetFloat(MovementSpeedId, 0f);
             animator.SetTrigger(DeathId);
+            networkState?.Publish(true, false);
         }
 
         public void CompleteDeathAnimation()
         {
+            if (NetworkManager.Singleton != null &&
+                NetworkManager.Singleton.IsListening &&
+                !NetworkManager.Singleton.IsServer)
+            {
+                return;
+            }
+
             if (state == State.Dead)
             {
                 deathInteractionRoot.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
                 deathInteractionRoot.SetActive(true);
+                networkState?.Publish(true, true);
+            }
+        }
+
+        private void ApplyReplicatedState(bool isDead, bool isLootVisible)
+        {
+            if (networkState == null || networkState.IsServer)
+            {
+                return;
+            }
+
+            if (isDead && state != State.Dead)
+            {
+                state = State.Dead;
+                agent.enabled = false;
+                GetComponent<CapsuleCollider>().enabled = false;
+                animator.SetFloat(MovementSpeedId, 0f);
+                animator.SetTrigger(DeathId);
+            }
+
+            deathInteractionRoot.SetActive(isLootVisible);
+            if (isLootVisible)
+            {
+                deathInteractionRoot.transform.localRotation =
+                    Quaternion.Euler(90f, 0f, 0f);
             }
         }
 
@@ -189,6 +260,29 @@ namespace SimpleSummon.Runtime
             if (state != State.Dead)
             {
                 BeginReturn();
+            }
+        }
+
+        private void TrySelectPlayer()
+        {
+            PlayerController closest = PlayerRegistry.GetClosestLiving(transform.position);
+            if (closest != player)
+            {
+                SetPlayer(closest);
+            }
+        }
+
+        private void SetPlayer(PlayerController value)
+        {
+            if (player != null)
+            {
+                player.Respawned -= ForgetPlayer;
+            }
+
+            player = value;
+            if (player != null)
+            {
+                player.Respawned += ForgetPlayer;
             }
         }
 

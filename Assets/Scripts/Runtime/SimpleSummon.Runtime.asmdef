@@ -1,0 +1,14 @@
+{
+  "name": "SimpleSummon.Runtime",
+  "rootNamespace": "SimpleSummon.Runtime",
+  "references": [
+    "SimpleSummon.Application",
+    "SimpleSummon.Domain",
+    "SimpleSummon.Network",
+    "Unity.InputSystem",
+    "Unity.Netcode.Runtime",
+    "Unity.RenderPipelines.Core.Runtime",
+    "UnityEngine.UI"
+  ],
+  "autoReferenced": true
+}

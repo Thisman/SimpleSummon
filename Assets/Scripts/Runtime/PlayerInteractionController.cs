@@ -1,3 +1,5 @@
+using SimpleSummon.Network;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -18,20 +20,49 @@ namespace SimpleSummon.Runtime
         private float holdTime;
         private bool interactionTriggered;
         private readonly RaycastHit[] raycastHits = new RaycastHit[RaycastBufferSize];
+        private NetworkPlayer networkPlayer;
+        private bool inputEnabled;
+        private InputAction interactInput;
+
+        private void Awake()
+        {
+            networkPlayer = GetComponent<NetworkPlayer>();
+            interactInput = interactAction.action.Clone();
+        }
 
         private void OnEnable()
         {
-            interactAction.action.Enable();
+            if (networkPlayer != null)
+            {
+                networkPlayer.RoleChanged += RefreshLocalRole;
+            }
+
+            RefreshLocalRole();
         }
 
         private void OnDisable()
         {
-            interactAction.action.Disable();
+            if (networkPlayer != null)
+            {
+                networkPlayer.RoleChanged -= RefreshLocalRole;
+            }
+
+            SetInputEnabled(false);
             ClearTarget();
+        }
+
+        private void OnDestroy()
+        {
+            interactInput?.Dispose();
         }
 
         private void Update()
         {
+            if (networkPlayer != null && !networkPlayer.CanReadLocalInput)
+            {
+                return;
+            }
+
             InteractiveActor actor = FindActor();
 
             if (actor != currentActor)
@@ -44,14 +75,14 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            if (!interactAction.action.IsPressed())
+            if (!interactInput.IsPressed())
             {
                 ResetProgress();
                 return;
             }
 
             holdTime += Time.deltaTime;
-            promptView.SetProgress(holdTime / holdDuration);
+            ResolvePromptView()?.SetProgress(holdTime / holdDuration);
 
             if (holdTime < holdDuration)
             {
@@ -59,7 +90,22 @@ namespace SimpleSummon.Runtime
             }
 
             interactionTriggered = true;
-            currentActor.Interact(gameObject);
+            bool isLocalPresentation =
+                currentActor.GetComponentInChildren<InstructionInteraction>(true) != null;
+            if (isLocalPresentation ||
+                networkPlayer == null ||
+                !networkPlayer.IsSpawned)
+            {
+                currentActor.Interact(gameObject);
+            }
+            else
+            {
+                NetworkObject target = currentActor.GetComponentInParent<NetworkObject>();
+                if (target != null)
+                {
+                    networkPlayer.RequestInteraction(target, interactionDistance);
+                }
+            }
             ClearTarget();
         }
 
@@ -106,18 +152,18 @@ namespace SimpleSummon.Runtime
 
             if (currentActor == null)
             {
-                promptView.Hide();
+                ResolvePromptView()?.Hide();
                 return;
             }
 
-            promptView.Show(currentActor.InteractionText);
+            ResolvePromptView()?.Show(currentActor.InteractionText);
         }
 
         private void ResetProgress()
         {
             holdTime = 0f;
             interactionTriggered = false;
-            promptView.SetProgress(0f);
+            ResolvePromptView()?.SetProgress(0f);
         }
 
         private void ClearTarget()
@@ -130,6 +176,39 @@ namespace SimpleSummon.Runtime
             {
                 promptView.Hide();
             }
+        }
+
+        private void RefreshLocalRole()
+        {
+            SetInputEnabled(networkPlayer == null || networkPlayer.CanReadLocalInput);
+        }
+
+        private void SetInputEnabled(bool value)
+        {
+            if (inputEnabled == value)
+            {
+                return;
+            }
+
+            inputEnabled = value;
+            if (value)
+            {
+                interactInput.Enable();
+            }
+            else
+            {
+                interactInput.Disable();
+            }
+        }
+
+        private InteractionPromptView ResolvePromptView()
+        {
+            if (promptView == null && LocalPlayerHud.Instance != null)
+            {
+                promptView = LocalPlayerHud.Instance.InteractionPrompt;
+            }
+
+            return promptView;
         }
     }
 }

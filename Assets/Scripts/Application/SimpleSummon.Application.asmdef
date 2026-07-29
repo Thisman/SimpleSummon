@@ -1,0 +1,8 @@
+{
+  "name": "SimpleSummon.Application",
+  "rootNamespace": "SimpleSummon.Application",
+  "references": [
+    "SimpleSummon.Domain"
+  ],
+  "autoReferenced": true
+}

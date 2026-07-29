@@ -1,0 +1,6 @@
+{
+  "name": "SimpleSummon.Domain",
+  "rootNamespace": "SimpleSummon.Domain",
+  "autoReferenced": true,
+  "noEngineReferences": true
+}

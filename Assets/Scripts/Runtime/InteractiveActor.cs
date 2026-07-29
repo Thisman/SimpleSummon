@@ -1,8 +1,9 @@
+using SimpleSummon.Network;
 using UnityEngine;
 
 namespace SimpleSummon.Runtime
 {
-    public sealed class InteractiveActor : MonoBehaviour
+    public sealed class InteractiveActor : MonoBehaviour, INetworkInteractionTarget
     {
         [SerializeField] private string interactionText;
         [SerializeField] private MonoBehaviour interactionTarget;
@@ -26,6 +27,11 @@ namespace SimpleSummon.Runtime
         public void Interact(GameObject interactor)
         {
             interactable?.Interact(interactor);
+        }
+
+        public void InteractOnServer(GameObject interactor)
+        {
+            Interact(interactor);
         }
     }
 }

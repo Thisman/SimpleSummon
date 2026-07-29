@@ -1,8 +1,10 @@
 using System;
 using SimpleSummon.Application;
 using SimpleSummon.Domain;
+using SimpleSummon.Network;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 namespace SimpleSummon.Runtime
 {
@@ -31,12 +33,21 @@ namespace SimpleSummon.Runtime
 
         private CharacterController characterController;
         private OrbitCameraController orbitCamera;
+        private NetworkPlayer networkPlayer;
         private UnitModel model;
         private PlayerSettings settings;
         private Texture2D damageVignette;
         private Vector3 horizontalVelocity;
         private float verticalVelocity;
         private float damageVignetteTime;
+        private bool inputEnabled;
+        private InputAction moveInput;
+        private InputAction jumpInput;
+        private InputAction attackInput;
+        private Vector3 fallbackSpawnPosition;
+        private Quaternion fallbackSpawnRotation;
+        private bool replicatedDead;
+        private bool replicatedStateInitialized;
 
         public event Action Respawned;
 
@@ -45,7 +56,15 @@ namespace SimpleSummon.Runtime
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
+            moveInput = moveAction.action.Clone();
+            jumpInput = jumpAction.action.Clone();
+            attackInput = attackAction.action.Clone();
+            fallbackSpawnPosition = transform.position;
+            fallbackSpawnRotation = transform.rotation;
+            networkPlayer = GetComponent<NetworkPlayer>();
             orbitCamera = cameraTransform.GetComponent<OrbitCameraController>();
+            cameraTransform.gameObject.SetActive(
+                SceneManager.GetActiveScene().name == NetworkSessionService.GameSceneName);
             damageVignette = CreateDamageVignette();
 
             settings = GetComponent<PlayerSettings>();
@@ -59,20 +78,36 @@ namespace SimpleSummon.Runtime
 
         private void OnEnable()
         {
-            moveAction.action.Enable();
-            jumpAction.action.Enable();
-            attackAction.action.Enable();
+            PlayerRegistry.Register(this);
+            SceneManager.activeSceneChanged += HandleActiveSceneChanged;
+            if (networkPlayer != null)
+            {
+                networkPlayer.RoleChanged += RefreshLocalRole;
+                networkPlayer.VitalStateChanged += ApplyReplicatedVitalState;
+                networkPlayer.DamageReceived += ApplyReplicatedDamage;
+            }
+
+            RefreshLocalRole();
         }
 
         private void OnDisable()
         {
-            moveAction.action.Disable();
-            jumpAction.action.Disable();
-            attackAction.action.Disable();
+            PlayerRegistry.Unregister(this);
+            SceneManager.activeSceneChanged -= HandleActiveSceneChanged;
+            SetInputEnabled(false);
+            if (networkPlayer != null)
+            {
+                networkPlayer.RoleChanged -= RefreshLocalRole;
+                networkPlayer.VitalStateChanged -= ApplyReplicatedVitalState;
+                networkPlayer.DamageReceived -= ApplyReplicatedDamage;
+            }
         }
 
         private void OnDestroy()
         {
+            moveInput?.Dispose();
+            jumpInput?.Dispose();
+            attackInput?.Dispose();
             Destroy(damageVignette);
         }
 
@@ -85,15 +120,37 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            Vector2 input = moveAction.action.ReadValue<Vector2>();
-            Vector3 direction = UnitMovementService.GetCameraRelativeDirection(
-                input,
-                cameraTransform.forward,
-                cameraTransform.right);
+            Vector3 direction = Vector3.zero;
+            bool jumpRequested = false;
+            bool attackRequested = false;
 
-            UpdateVerticalVelocity();
+            if (networkPlayer == null || networkPlayer.CanReadLocalInput)
+            {
+                Vector2 input = moveInput.ReadValue<Vector2>();
+                direction = UnitMovementService.GetCameraRelativeDirection(
+                    input,
+                    cameraTransform.forward,
+                    cameraTransform.right);
+                jumpRequested = jumpInput.WasPressedThisFrame();
+                attackRequested = attackInput.WasPressedThisFrame();
+                networkPlayer?.SubmitInput(direction, jumpRequested, attackRequested);
+            }
+
+            if (networkPlayer != null && networkPlayer.CanRunSimulation)
+            {
+                networkPlayer.ReadServerInput(
+                    out direction,
+                    out jumpRequested,
+                    out attackRequested);
+            }
+            else if (networkPlayer != null)
+            {
+                return;
+            }
+
+            UpdateVerticalVelocity(jumpRequested);
             Move(direction);
-            UpdateAttack();
+            UpdateAttack(attackRequested);
 
             float normalizedMovementSpeed = model.MovementSpeed > 0f
                 ? horizontalVelocity.magnitude / model.MovementSpeed
@@ -101,10 +158,8 @@ namespace SimpleSummon.Runtime
             animator.SetFloat(MovementSpeedId, normalizedMovementSpeed, 0.1f, Time.deltaTime);
         }
 
-        private void UpdateAttack()
+        private void UpdateAttack(bool attackRequested)
         {
-            bool attackRequested = attackAction.action.WasPressedThisFrame();
-
             if (UnitAttackService.TryAttack(model, Time.deltaTime, attackRequested))
             {
                 FaceAimedTarget();
@@ -112,14 +167,14 @@ namespace SimpleSummon.Runtime
             }
         }
 
-        private void UpdateVerticalVelocity()
+        private void UpdateVerticalVelocity(bool jumpRequested)
         {
             if (characterController.isGrounded && verticalVelocity < 0f)
             {
                 verticalVelocity = -2f;
             }
 
-            if (characterController.isGrounded && jumpAction.action.WasPressedThisFrame())
+            if (characterController.isGrounded && jumpRequested)
             {
                 verticalVelocity = UnitMovementService.GetJumpVelocity(model.JumpHeight, Physics.gravity.y);
             }
@@ -178,7 +233,8 @@ namespace SimpleSummon.Runtime
 
         public void ApplyAttackDamage()
         {
-            if (model.IsDead)
+            if (model.IsDead ||
+                networkPlayer != null && !networkPlayer.CanRunSimulation)
             {
                 return;
             }
@@ -197,6 +253,8 @@ namespace SimpleSummon.Runtime
             }
 
             model.TakeDamage(damage);
+            networkPlayer?.PublishDamage();
+            networkPlayer?.PublishVitalState(model.CurrentHealth, model.IsDead);
             damageFlash.Play();
             orbitCamera.PlayDamageShake();
             damageVignetteTime = damageVignetteDuration;
@@ -230,15 +288,117 @@ namespace SimpleSummon.Runtime
 
         public void CompleteDeathAnimation()
         {
-            if (!model.IsDead)
+            if (!model.IsDead ||
+                networkPlayer != null && !networkPlayer.CanRunSimulation)
             {
                 return;
             }
 
-            Teleport(spawnPoint);
+            if (spawnPoint != null)
+            {
+                Teleport(spawnPoint);
+            }
+            else
+            {
+                characterController.enabled = false;
+                transform.SetPositionAndRotation(
+                    fallbackSpawnPosition,
+                    fallbackSpawnRotation);
+                characterController.enabled = true;
+                StopHorizontalMovement();
+                verticalVelocity = 0f;
+            }
             model.RestoreHealth();
+            networkPlayer?.PublishVitalState(model.CurrentHealth, model.IsDead);
             animator.SetTrigger(RespawnId);
             Respawned?.Invoke();
+        }
+
+        private void RefreshLocalRole()
+        {
+            bool isLocal = networkPlayer == null || networkPlayer.CanReadLocalInput;
+            SetInputEnabled(isLocal);
+            cameraTransform.gameObject.SetActive(
+                isLocal &&
+                SceneManager.GetActiveScene().name == NetworkSessionService.GameSceneName);
+            if (networkPlayer != null && networkPlayer.CanRunSimulation)
+            {
+                networkPlayer.PublishVitalState(model.CurrentHealth, model.IsDead);
+            }
+        }
+
+        private void HandleActiveSceneChanged(Scene _, Scene __)
+        {
+            RefreshLocalRole();
+        }
+
+        private void SetInputEnabled(bool enabled)
+        {
+            if (inputEnabled == enabled)
+            {
+                return;
+            }
+
+            inputEnabled = enabled;
+            if (enabled)
+            {
+                moveInput.Enable();
+                jumpInput.Enable();
+                attackInput.Enable();
+            }
+            else
+            {
+                moveInput.Disable();
+                jumpInput.Disable();
+                attackInput.Disable();
+            }
+        }
+
+        public void SetLocalInputEnabled(bool enabled)
+        {
+            if (networkPlayer == null || networkPlayer.CanReadLocalInput)
+            {
+                SetInputEnabled(enabled);
+            }
+        }
+
+        private void ApplyReplicatedVitalState(float currentHealth, bool isDead)
+        {
+            if (networkPlayer == null || networkPlayer.CanRunSimulation)
+            {
+                return;
+            }
+
+            model.SetCurrentHealth(currentHealth);
+            if (!replicatedStateInitialized || replicatedDead != isDead)
+            {
+                if (isDead)
+                {
+                    animator.SetTrigger(DeathId);
+                }
+                else if (replicatedStateInitialized)
+                {
+                    animator.SetTrigger(RespawnId);
+                }
+            }
+
+            replicatedDead = isDead;
+            replicatedStateInitialized = true;
+        }
+
+        private void ApplyReplicatedDamage()
+        {
+            if (networkPlayer == null || networkPlayer.CanRunSimulation)
+            {
+                return;
+            }
+
+            damageFlash.Play();
+            if (networkPlayer.CanReadLocalInput)
+            {
+                orbitCamera.PlayDamageShake();
+                damageVignetteTime = damageVignetteDuration;
+            }
         }
 
         private bool TryGetClosestAttackTarget(out IDamageable target)
@@ -267,6 +427,11 @@ namespace SimpleSummon.Runtime
                 }
 
                 Component candidateComponent = (Component)candidate;
+                if (candidateComponent is PlayerController)
+                {
+                    continue;
+                }
+
                 Vector3 direction = candidateComponent.transform.position - transform.position;
                 direction.y = 0f;
 
@@ -356,7 +521,9 @@ namespace SimpleSummon.Runtime
 
                 target = hit.collider.GetComponentInParent<IDamageable>();
                 targetHit = hit;
-                return target != null && !target.IsDead;
+                return target != null &&
+                       target is not PlayerController &&
+                       !target.IsDead;
             }
 
             target = null;

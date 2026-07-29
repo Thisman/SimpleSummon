@@ -1,0 +1,15 @@
+{
+  "name": "SimpleSummon.Network",
+  "rootNamespace": "SimpleSummon.Network",
+  "references": [
+    "SimpleSummon.Application",
+    "SimpleSummon.Domain",
+    "Unity.Collections",
+    "Unity.Netcode.Runtime",
+    "Unity.Services.Authentication",
+    "Unity.Services.Core",
+    "Unity.Services.Multiplayer",
+    "Unity.Networking.Transport"
+  ],
+  "autoReferenced": true
+}

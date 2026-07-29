@@ -1,0 +1,16 @@
+{
+  "name": "SimpleSummon.Editor",
+  "rootNamespace": "SimpleSummon.Editor",
+  "references": [
+    "SimpleSummon.Network",
+    "SimpleSummon.Runtime",
+    "Unity.InputSystem",
+    "Unity.Netcode.Runtime",
+    "Unity.Networking.Transport",
+    "UnityEngine.UI"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": true
+}

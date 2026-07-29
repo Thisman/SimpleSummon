@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 
 namespace SimpleSummon.Runtime
@@ -15,7 +16,15 @@ namespace SimpleSummon.Runtime
             }
 
             inventory.Add(itemName, quantity);
-            Destroy(gameObject);
+            NetworkObject networkObject = GetComponentInParent<NetworkObject>();
+            if (networkObject != null && networkObject.IsSpawned)
+            {
+                networkObject.Despawn(true);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
         }
     }
 }

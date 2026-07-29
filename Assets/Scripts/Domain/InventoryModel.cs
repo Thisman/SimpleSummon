@@ -29,5 +29,22 @@ namespace SimpleSummon.Domain
         {
             return items.TryGetValue(itemName, out int quantity) ? quantity : 0;
         }
+
+        public void SetQuantity(string itemName, int quantity)
+        {
+            if (string.IsNullOrWhiteSpace(itemName))
+            {
+                throw new ArgumentException("Item name cannot be empty.", nameof(itemName));
+            }
+
+            if (quantity <= 0)
+            {
+                items.Remove(itemName);
+            }
+            else
+            {
+                items[itemName] = quantity;
+            }
+        }
     }
 }

@@ -57,5 +57,10 @@ namespace SimpleSummon.Domain
             CurrentHealth = MaximumHealth;
             AttackCooldownRemaining = 0f;
         }
+
+        public void SetCurrentHealth(float currentHealth)
+        {
+            CurrentHealth = System.Math.Clamp(currentHealth, 0f, MaximumHealth);
+        }
     }
 }

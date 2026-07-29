@@ -23,9 +23,11 @@ namespace SimpleSummon.Runtime
         private float pitch;
         private float focusHeight;
         private float damageShakeTime;
+        private InputAction lookInput;
 
         private void Awake()
         {
+            lookInput = lookAction.action.Clone();
             yaw = playerRoot.eulerAngles.y;
             focusHeight = cameraPivot.position.y - playerRoot.position.y;
             pitch = Mathf.Clamp(
@@ -36,18 +38,23 @@ namespace SimpleSummon.Runtime
 
         private void OnEnable()
         {
-            lookAction.action.Enable();
+            lookInput.Enable();
             LockCursor();
         }
 
         private void OnDisable()
         {
-            lookAction.action.Disable();
+            lookInput.Disable();
+        }
+
+        private void OnDestroy()
+        {
+            lookInput?.Dispose();
         }
 
         private void Update()
         {
-            Vector2 look = lookAction.action.ReadValue<Vector2>();
+            Vector2 look = lookInput.ReadValue<Vector2>();
             yaw += look.x * sensitivity;
             pitch = Mathf.Clamp(pitch - look.y * sensitivity, minimumPitch, maximumPitch);
         }
