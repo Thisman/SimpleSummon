@@ -11,7 +11,8 @@ namespace SimpleSummon.Runtime
         private IInteractable interactable;
 
         public string InteractionText => interactionText;
-        public bool IsLocalPresentation => interactable is InstructionInteraction;
+        public bool IsLocalPresentation =>
+            interactable is InstructionInteraction or SummonInteraction;
 
         private void Awake()
         {

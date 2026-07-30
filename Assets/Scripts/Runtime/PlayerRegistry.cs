@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using SimpleSummon.Network;
 using UnityEngine;
 
 namespace SimpleSummon.Runtime
@@ -41,6 +42,21 @@ namespace SimpleSummon.Runtime
             }
 
             return closest;
+        }
+
+        public static PlayerController GetLocalPlayer()
+        {
+            foreach (PlayerController player in players)
+            {
+                if (player != null &&
+                    player.TryGetComponent(out NetworkPlayer networkPlayer) &&
+                    networkPlayer.CanReadLocalInput)
+                {
+                    return player;
+                }
+            }
+
+            return null;
         }
     }
 }

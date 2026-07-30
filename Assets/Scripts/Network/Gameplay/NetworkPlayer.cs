@@ -207,8 +207,7 @@ namespace SimpleSummon.Network
         {
             if (target == null ||
                 maximumDistance <= 0f ||
-                (target.transform.position - transform.position).sqrMagnitude >
-                maximumDistance * maximumDistance)
+                !IsInteractionTargetInRange(target, maximumDistance))
             {
                 return;
             }
@@ -222,6 +221,32 @@ namespace SimpleSummon.Network
                     return;
                 }
             }
+        }
+
+        private bool IsInteractionTargetInRange(
+            NetworkObject target,
+            float maximumDistance)
+        {
+            float maximumSqrDistance = maximumDistance * maximumDistance;
+            Collider[] targetColliders = target.GetComponentsInChildren<Collider>(true);
+
+            foreach (Collider targetCollider in targetColliders)
+            {
+                if (!targetCollider.enabled)
+                {
+                    continue;
+                }
+
+                Vector3 closestPoint = targetCollider.ClosestPoint(transform.position);
+                if ((closestPoint - transform.position).sqrMagnitude <= maximumSqrDistance)
+                {
+                    return true;
+                }
+            }
+
+            return targetColliders.Length == 0 &&
+                   (target.transform.position - transform.position).sqrMagnitude <=
+                   maximumSqrDistance;
         }
 
         private void SetServerInput(

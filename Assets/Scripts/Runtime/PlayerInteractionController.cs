@@ -199,6 +199,18 @@ namespace SimpleSummon.Runtime
             }
         }
 
+        public void SetLocalInputEnabled(bool enabled)
+        {
+            if (networkPlayer == null || networkPlayer.CanReadLocalInput)
+            {
+                SetInputEnabled(enabled);
+                if (!enabled)
+                {
+                    ClearTarget();
+                }
+            }
+        }
+
         private InteractionPromptView ResolvePromptView()
         {
             if (promptView == null && LocalPlayerHud.Instance != null)
