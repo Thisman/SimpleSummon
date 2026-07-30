@@ -19,7 +19,6 @@ namespace SimpleSummon.Network
     {
         private const ulong NoOwner = ulong.MaxValue;
         private const int MaximumBatchSize = 32;
-        private const int MaximumPointCount = 2048;
         private const float MinimumPointDistance = 0.001f;
         private const float MinimumBatchInterval = 1f / 30f;
 
@@ -193,12 +192,7 @@ namespace SimpleSummon.Network
 
         private void AppendValidatedPoints(NetworkSummonPoint[] submittedPoints)
         {
-            int currentPointCount = IsSpawned ? points.Count : offlinePoints.Count;
-            int remainingCapacity = MaximumPointCount - currentPointCount;
-            int count = Mathf.Min(
-                submittedPoints.Length,
-                MaximumBatchSize,
-                remainingCapacity);
+            int count = Mathf.Min(submittedPoints.Length, MaximumBatchSize);
 
             for (int i = 0; i < count; i++)
             {
