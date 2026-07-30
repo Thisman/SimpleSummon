@@ -94,11 +94,11 @@
   <Project Path="Unity.InternalAPIEngineBridge.RenderPipelines.Core.Runtime.Shared.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="Unity.RenderPipeline.Universal.ShaderLibrary.csproj" />
+  <Project Path="SimpleSummon.Editor.csproj" />
   <Project Path="SimpleSummon.Domain.Tests.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
   <Project Path="Unity.InternalAPIEngineBridge.RenderPipelines.Core.Editor.csproj" />
   <Project Path="Unity.InternalAPIEngineBridge.004.csproj" />
-  <Project Path="SimpleSummon.Editor.csproj" />
   <Project Path="Unity.InputSystem.DocCodeSamples.csproj" />
   <Project Path="Unity.Netcode.PackageChecker.Editor.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Shaders.csproj" />

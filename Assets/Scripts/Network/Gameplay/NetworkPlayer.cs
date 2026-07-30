@@ -1,4 +1,5 @@
 using System;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -12,6 +13,7 @@ namespace SimpleSummon.Network
         private readonly NetworkVariable<float> health = new();
         private readonly NetworkVariable<bool> dead = new();
         private readonly NetworkVariable<int> damageSequence = new();
+        private readonly NetworkVariable<FixedString64Bytes> nickname = new("Player");
         private readonly NetworkList<NetworkInventoryEntry> inventory = new();
 
         private Vector3 serverMoveDirection;
@@ -26,6 +28,7 @@ namespace SimpleSummon.Network
         public event Action<float, bool> VitalStateChanged;
         public event Action InventoryChanged;
         public event Action DamageReceived;
+        public event Action<string> NicknameChanged;
 
         private bool IsOffline =>
             NetworkManager.Singleton == null ||
@@ -33,16 +36,25 @@ namespace SimpleSummon.Network
 
         public bool CanReadLocalInput => IsOffline || IsSpawned && IsOwner;
         public bool CanRunSimulation => IsOffline || IsSpawned && IsServer;
+        public string Nickname => IsOffline
+            ? NormalizeNickname(NicknameStorage.Load())
+            : nickname.Value.ToString();
 
         public override void OnNetworkSpawn()
         {
             health.OnValueChanged += HandleHealthChanged;
             dead.OnValueChanged += HandleDeadChanged;
             damageSequence.OnValueChanged += HandleDamageSequenceChanged;
+            nickname.OnValueChanged += HandleNicknameChanged;
             inventory.OnListChanged += HandleInventoryChanged;
+            if (IsOwner)
+            {
+                SetNickname(NicknameStorage.Load());
+            }
             RoleChanged?.Invoke();
             VitalStateChanged?.Invoke(health.Value, dead.Value);
             InventoryChanged?.Invoke();
+            NicknameChanged?.Invoke(Nickname);
         }
 
         public override void OnNetworkDespawn()
@@ -50,8 +62,28 @@ namespace SimpleSummon.Network
             health.OnValueChanged -= HandleHealthChanged;
             dead.OnValueChanged -= HandleDeadChanged;
             damageSequence.OnValueChanged -= HandleDamageSequenceChanged;
+            nickname.OnValueChanged -= HandleNicknameChanged;
             inventory.OnListChanged -= HandleInventoryChanged;
             RoleChanged?.Invoke();
+        }
+
+        private void SetNickname(string value)
+        {
+            string normalized = NormalizeNickname(value);
+            if (IsServer)
+            {
+                nickname.Value = normalized;
+            }
+            else
+            {
+                SetNicknameRpc(normalized);
+            }
+        }
+
+        [Rpc(SendTo.Server)]
+        private void SetNicknameRpc(FixedString64Bytes value)
+        {
+            nickname.Value = NormalizeNickname(value.ToString());
         }
 
         public void SubmitInput(Vector3 moveDirection, bool jumpRequested, bool attackRequested)
@@ -315,6 +347,17 @@ namespace SimpleSummon.Network
             {
                 DamageReceived?.Invoke();
             }
+        }
+
+        private void HandleNicknameChanged(FixedString64Bytes _, FixedString64Bytes value)
+        {
+            NicknameChanged?.Invoke(value.ToString());
+        }
+
+        private static string NormalizeNickname(string value)
+        {
+            string normalized = string.IsNullOrWhiteSpace(value) ? "Player" : value.Trim();
+            return normalized.Length <= 32 ? normalized : normalized.Substring(0, 32);
         }
     }
 }
