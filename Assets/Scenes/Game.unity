@@ -85894,7 +85894,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da2d8a40c2a540a788d45c2f9ffa5d76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SimpleSummon.Runtime.InstructionInteraction
-  instructionText: {fileID: 4000000080}
   cameraPosition: {x: 5.722, y: 2.601, z: 9.886}
   cameraEulerAngles: {x: 74.2, y: 0, z: 0}
   cameraScale: {x: 1, y: 1, z: 1}
