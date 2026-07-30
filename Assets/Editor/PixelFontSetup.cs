@@ -15,7 +15,7 @@ namespace SimpleSummon.Editor
     [InitializeOnLoad]
     public static class PixelFontSetup
     {
-        private const string SetupVersion = "SimpleSummon.PixelFont.v1";
+        private const string SetupVersion = "SimpleSummon.PixelFont.v2";
         private const string FontPath =
             "Assets/Fonts/PressStart2P/PressStart2P-Regular.ttf";
         private const string TmpFontPath =
@@ -39,23 +39,25 @@ namespace SimpleSummon.Editor
             }
 
             Type tmpFontType = Type.GetType("TMPro.TMP_FontAsset, Unity.TextMeshPro");
+            MethodInfo createFontAsset = tmpFontType
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .First(method =>
+                {
+                    ParameterInfo[] parameters = method.GetParameters();
+                    return method.Name == "CreateFontAsset" &&
+                           parameters.Length == 1 &&
+                           parameters[0].ParameterType == typeof(Font);
+                });
+
             Object tmpFont = AssetDatabase.LoadAssetAtPath(TmpFontPath, tmpFontType);
             if (tmpFont == null)
             {
-                MethodInfo createFontAsset = tmpFontType
-                    .GetMethods(BindingFlags.Public | BindingFlags.Static)
-                    .First(method =>
-                    {
-                        ParameterInfo[] parameters = method.GetParameters();
-                        return method.Name == "CreateFontAsset" &&
-                               parameters.Length == 1 &&
-                               parameters[0].ParameterType == typeof(Font);
-                    });
                 tmpFont = (Object)createFontAsset.Invoke(null, new object[] { font });
                 tmpFont.name = "PressStart2P-Regular SDF";
                 AssetDatabase.CreateAsset(tmpFont, TmpFontPath);
             }
 
+            EnsureFontResources(tmpFont, font, createFontAsset);
             SerializedObject tmpFontSerialized = new(tmpFont);
             SerializedProperty atlasPopulationMode =
                 tmpFontSerialized.FindProperty("m_AtlasPopulationMode");
@@ -75,6 +77,50 @@ namespace SimpleSummon.Editor
             fontImporter.SaveAndReimport();
             AssetDatabase.SaveAssets();
             Debug.Log("Press Start 2P is now the project UI font.");
+        }
+
+        private static void EnsureFontResources(
+            Object tmpFont,
+            Font font,
+            MethodInfo createFontAsset)
+        {
+            SerializedObject serializedFont = new(tmpFont);
+            SerializedProperty materialProperty =
+                serializedFont.FindProperty("m_Material");
+            SerializedProperty atlasTexturesProperty =
+                serializedFont.FindProperty("m_AtlasTextures");
+            bool hasAtlas =
+                atlasTexturesProperty.arraySize > 0 &&
+                atlasTexturesProperty.GetArrayElementAtIndex(0).objectReferenceValue != null;
+            if (materialProperty.objectReferenceValue != null && hasAtlas)
+            {
+                return;
+            }
+
+            Object generatedFont =
+                (Object)createFontAsset.Invoke(null, new object[] { font });
+            SerializedObject generatedSerialized = new(generatedFont);
+            Object material = generatedSerialized
+                .FindProperty("m_Material")
+                .objectReferenceValue;
+            Object atlasTexture = generatedSerialized
+                .FindProperty("m_AtlasTextures")
+                .GetArrayElementAtIndex(0)
+                .objectReferenceValue;
+
+            material.name = $"{tmpFont.name} Material";
+            atlasTexture.name = $"{tmpFont.name} Atlas";
+            AssetDatabase.AddObjectToAsset(material, tmpFont);
+            AssetDatabase.AddObjectToAsset(atlasTexture, tmpFont);
+
+            materialProperty.objectReferenceValue = material;
+            atlasTexturesProperty.arraySize = 1;
+            atlasTexturesProperty
+                .GetArrayElementAtIndex(0)
+                .objectReferenceValue = atlasTexture;
+            serializedFont.ApplyModifiedPropertiesWithoutUndo();
+            Object.DestroyImmediate(generatedFont);
+            EditorUtility.SetDirty(tmpFont);
         }
 
         private static void TryApplyAutomatically()
