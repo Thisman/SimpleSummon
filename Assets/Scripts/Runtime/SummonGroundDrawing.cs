@@ -17,6 +17,7 @@ namespace SimpleSummon.Runtime
 
         private Mesh mesh;
         private Material runtimeMaterial;
+        private bool rebuildRequested;
 
         private void Awake()
         {
@@ -44,19 +45,35 @@ namespace SimpleSummon.Runtime
 
         private void OnEnable()
         {
-            ritual.DrawingChanged += Rebuild;
-            Rebuild();
+            ritual.DrawingChanged += RequestRebuild;
+            RequestRebuild();
         }
 
         private void OnDisable()
         {
-            ritual.DrawingChanged -= Rebuild;
+            ritual.DrawingChanged -= RequestRebuild;
         }
 
         private void OnDestroy()
         {
             Destroy(mesh);
             Destroy(runtimeMaterial);
+        }
+
+        private void LateUpdate()
+        {
+            if (!rebuildRequested)
+            {
+                return;
+            }
+
+            rebuildRequested = false;
+            Rebuild();
+        }
+
+        private void RequestRebuild()
+        {
+            rebuildRequested = true;
         }
 
         private void Rebuild()

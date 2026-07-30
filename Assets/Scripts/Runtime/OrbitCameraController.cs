@@ -5,6 +5,8 @@ namespace SimpleSummon.Runtime
 {
     public sealed class OrbitCameraController : MonoBehaviour
     {
+        private const int ObstructionBufferSize = 16;
+
         [SerializeField] private Transform playerRoot;
         [SerializeField] private Transform cameraPivot;
         [SerializeField] private InputActionReference lookAction;
@@ -24,6 +26,8 @@ namespace SimpleSummon.Runtime
         private float focusHeight;
         private float damageShakeTime;
         private InputAction lookInput;
+        private readonly RaycastHit[] obstructionHits =
+            new RaycastHit[ObstructionBufferSize];
 
         private void Awake()
         {
@@ -70,18 +74,20 @@ namespace SimpleSummon.Runtime
 
             if (idealDistance > 0f)
             {
-                RaycastHit[] hits = Physics.SphereCastAll(
+                int hitCount = Physics.SphereCastNonAlloc(
                     focusPoint,
                     collisionRadius,
                     cameraDirection / idealDistance,
+                    obstructionHits,
                     idealDistance,
                     obstructionLayers,
                     QueryTriggerInteraction.Ignore);
                 float closestDistance = idealDistance;
                 bool hasObstruction = false;
 
-                foreach (RaycastHit hit in hits)
+                for (int i = 0; i < hitCount; i++)
                 {
+                    RaycastHit hit = obstructionHits[i];
                     if (!hit.transform.IsChildOf(playerRoot))
                     {
                         closestDistance = Mathf.Min(closestDistance, hit.distance);

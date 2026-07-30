@@ -4,5 +4,6 @@
   "references": [
     "SimpleSummon.Domain"
   ],
-  "autoReferenced": true
+  "autoReferenced": true,
+  "noEngineReferences": true
 }

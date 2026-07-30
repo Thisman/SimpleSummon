@@ -1,0 +1,15 @@
+{
+  "name": "SimpleSummon.Domain.Tests",
+  "rootNamespace": "SimpleSummon.Domain.Tests",
+  "references": [
+    "SimpleSummon.Domain"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": false,
+  "noEngineReferences": true
+}

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using SimpleSummon.Application;
 using Unity.Netcode;
 using UnityEngine;
+using NumericsVector2 = System.Numerics.Vector2;
 
 namespace SimpleSummon.Network
 {
@@ -17,6 +19,9 @@ namespace SimpleSummon.Network
     {
         private const ulong NoOwner = ulong.MaxValue;
         private const int MaximumBatchSize = 32;
+        private const int MaximumPointCount = 2048;
+        private const float MinimumPointDistance = 0.001f;
+        private const float MinimumBatchInterval = 1f / 30f;
 
         private readonly NetworkVariable<SummonRitualState> state =
             new(SummonRitualState.Available);
@@ -25,6 +30,7 @@ namespace SimpleSummon.Network
         private readonly List<NetworkSummonPoint> offlinePoints = new();
         private SummonRitualState offlineState;
         private ulong offlineDrawingClientId = NoOwner;
+        private float nextBatchTime;
 
         public event Action StateChanged;
         public event Action DrawingChanged;
@@ -152,11 +158,13 @@ namespace SimpleSummon.Network
             RpcParams rpcParams = default)
         {
             if (rpcParams.Receive.SenderClientId != drawingClientId.Value ||
-                state.Value != SummonRitualState.Claimed)
+                state.Value != SummonRitualState.Claimed ||
+                Time.unscaledTime < nextBatchTime)
             {
                 return;
             }
 
+            nextBatchTime = Time.unscaledTime + MinimumBatchInterval;
             AppendValidatedPoints(submittedPoints);
         }
 
@@ -185,19 +193,35 @@ namespace SimpleSummon.Network
 
         private void AppendValidatedPoints(NetworkSummonPoint[] submittedPoints)
         {
-            int count = Mathf.Min(submittedPoints.Length, MaximumBatchSize);
+            int currentPointCount = IsSpawned ? points.Count : offlinePoints.Count;
+            int remainingCapacity = MaximumPointCount - currentPointCount;
+            int count = Mathf.Min(
+                submittedPoints.Length,
+                MaximumBatchSize,
+                remainingCapacity);
+
             for (int i = 0; i < count; i++)
             {
                 NetworkSummonPoint point = submittedPoints[i];
-                if (!float.IsFinite(point.Position.x) ||
-                    !float.IsFinite(point.Position.y))
+                NumericsVector2? previousPosition =
+                    TryGetLastPoint(out NetworkSummonPoint previousPoint)
+                        ? new NumericsVector2(
+                            previousPoint.Position.x,
+                            previousPoint.Position.y)
+                        : null;
+                if (!SummonPointValidationService.TryValidate(
+                        previousPosition,
+                        new NumericsVector2(point.Position.x, point.Position.y),
+                        point.StartsStroke,
+                        MinimumPointDistance,
+                        out NumericsVector2 validatedPosition))
                 {
                     continue;
                 }
 
                 point.Position = new Vector2(
-                    Mathf.Clamp01(point.Position.x),
-                    Mathf.Clamp01(point.Position.y));
+                    validatedPosition.X,
+                    validatedPosition.Y);
                 if (IsSpawned)
                 {
                     points.Add(point);
@@ -212,6 +236,19 @@ namespace SimpleSummon.Network
             {
                 DrawingChanged?.Invoke();
             }
+        }
+
+        private bool TryGetLastPoint(out NetworkSummonPoint point)
+        {
+            int count = IsSpawned ? points.Count : offlinePoints.Count;
+            if (count == 0)
+            {
+                point = default;
+                return false;
+            }
+
+            point = IsSpawned ? points[count - 1] : offlinePoints[count - 1];
+            return true;
         }
 
         private void ReleaseOnServer(ulong clientId)

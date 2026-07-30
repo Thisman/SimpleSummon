@@ -7,6 +7,8 @@ namespace SimpleSummon.Network
     [RequireComponent(typeof(NetworkObject))]
     public sealed class NetworkPlayer : NetworkBehaviour
     {
+        private const float InputSendInterval = 1f / 30f;
+
         private readonly NetworkVariable<float> health = new();
         private readonly NetworkVariable<bool> dead = new();
         private readonly NetworkVariable<int> damageSequence = new();
@@ -15,6 +17,10 @@ namespace SimpleSummon.Network
         private Vector3 serverMoveDirection;
         private bool serverJumpRequested;
         private bool serverAttackRequested;
+        private Vector3 pendingMoveDirection;
+        private bool pendingJumpRequested;
+        private bool pendingAttackRequested;
+        private float nextInputSendTime;
 
         public event Action RoleChanged;
         public event Action<float, bool> VitalStateChanged;
@@ -67,7 +73,22 @@ namespace SimpleSummon.Network
             }
             else
             {
-                SubmitInputRpc(moveDirection, jumpRequested, attackRequested);
+                pendingMoveDirection = moveDirection;
+                pendingJumpRequested |= jumpRequested;
+                pendingAttackRequested |= attackRequested;
+
+                if (Time.unscaledTime < nextInputSendTime)
+                {
+                    return;
+                }
+
+                nextInputSendTime = Time.unscaledTime + InputSendInterval;
+                SubmitInputRpc(
+                    pendingMoveDirection,
+                    pendingJumpRequested,
+                    pendingAttackRequested);
+                pendingJumpRequested = false;
+                pendingAttackRequested = false;
             }
         }
 

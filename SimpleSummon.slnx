@@ -64,8 +64,10 @@
   <Project Path="Unity.Services.Deployment.Editor.Shared.csproj" />
   <Project Path="Unity.AI.Navigation.Editor.csproj" />
   <Project Path="Unity.Netcode.Editor.CodeGen.csproj" />
+  <Project Path="SimpleSummon.Application.csproj" />
   <Project Path="Unity.Services.Multiplayer.Editor.Matchmaker.Authoring.Core.csproj" />
   <Project Path="Unity.Services.Core.Configuration.Editor.csproj" />
+  <Project Path="SimpleSummon.Application.Tests.csproj" />
   <Project Path="Unity.Services.Core.Configuration.csproj" />
   <Project Path="Unity.Multiplayer.Center.Common.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Runtime.Shared.csproj" />
@@ -92,7 +94,7 @@
   <Project Path="Unity.InternalAPIEngineBridge.RenderPipelines.Core.Runtime.Shared.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="Unity.RenderPipeline.Universal.ShaderLibrary.csproj" />
-  <Project Path="SimpleSummon.Application.csproj" />
+  <Project Path="SimpleSummon.Domain.Tests.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
   <Project Path="Unity.InternalAPIEngineBridge.RenderPipelines.Core.Editor.csproj" />
   <Project Path="Unity.InternalAPIEngineBridge.004.csproj" />

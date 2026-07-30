@@ -1,4 +1,6 @@
 using System;
+using NumericsVector2 = System.Numerics.Vector2;
+using NumericsVector3 = System.Numerics.Vector3;
 using SimpleSummon.Application;
 using SimpleSummon.Domain;
 using SimpleSummon.Network;
@@ -13,6 +15,8 @@ namespace SimpleSummon.Runtime
     public sealed class PlayerController : MonoBehaviour, IDamageable
     {
         private const float MinimumAttackDirectionDot = 0.70710678f;
+        private const int AttackColliderBufferSize = 32;
+        private const int AimHitBufferSize = 32;
 
         private static readonly int MovementSpeedId = Animator.StringToHash("MovementSpeed");
         private static readonly int AttackId = Animator.StringToHash("Attack");
@@ -48,6 +52,9 @@ namespace SimpleSummon.Runtime
         private Quaternion fallbackSpawnRotation;
         private bool replicatedDead;
         private bool replicatedStateInitialized;
+        private readonly Collider[] attackColliders =
+            new Collider[AttackColliderBufferSize];
+        private readonly RaycastHit[] aimHits = new RaycastHit[AimHitBufferSize];
 
         public event Action Respawned;
 
@@ -127,10 +134,15 @@ namespace SimpleSummon.Runtime
             if (networkPlayer == null || networkPlayer.CanReadLocalInput)
             {
                 Vector2 input = moveInput.ReadValue<Vector2>();
-                direction = UnitMovementService.GetCameraRelativeDirection(
-                    input,
-                    cameraTransform.forward,
-                    cameraTransform.right);
+                NumericsVector3 calculatedDirection =
+                    UnitMovementService.GetCameraRelativeDirection(
+                        new NumericsVector2(input.x, input.y),
+                        ToNumerics(cameraTransform.forward),
+                        ToNumerics(cameraTransform.right));
+                direction = new Vector3(
+                    calculatedDirection.X,
+                    calculatedDirection.Y,
+                    calculatedDirection.Z);
                 jumpRequested = jumpInput.WasPressedThisFrame();
                 attackRequested = attackInput.WasPressedThisFrame();
                 networkPlayer?.SubmitInput(direction, jumpRequested, attackRequested);
@@ -403,9 +415,10 @@ namespace SimpleSummon.Runtime
 
         private bool TryGetClosestAttackTarget(out IDamageable target)
         {
-            Collider[] colliders = Physics.OverlapSphere(
+            int colliderCount = Physics.OverlapSphereNonAlloc(
                 transform.position,
                 settings.AttackRange,
+                attackColliders,
                 settings.AttackMask,
                 QueryTriggerInteraction.Ignore);
 
@@ -413,8 +426,9 @@ namespace SimpleSummon.Runtime
             float closestSqrDistance = float.PositiveInfinity;
             float attackRangeSqr = settings.AttackRange * settings.AttackRange;
 
-            foreach (Collider collider in colliders)
+            for (int i = 0; i < colliderCount; i++)
             {
+                Collider collider = attackColliders[i];
                 if (collider.transform.IsChildOf(transform))
                 {
                     continue;
@@ -483,6 +497,11 @@ namespace SimpleSummon.Runtime
             return texture;
         }
 
+        private static NumericsVector3 ToNumerics(Vector3 value)
+        {
+            return new NumericsVector3(value.x, value.y, value.z);
+        }
+
         private void FaceAimedTarget()
         {
             Ray ray = new Ray(cameraTransform.position, cameraTransform.forward);
@@ -505,30 +524,41 @@ namespace SimpleSummon.Runtime
             out IDamageable target,
             out RaycastHit targetHit)
         {
-            RaycastHit[] hits = Physics.RaycastAll(
+            int hitCount = Physics.RaycastNonAlloc(
                 ray,
+                aimHits,
                 settings.AimRayDistance,
                 settings.AttackMask,
                 QueryTriggerInteraction.Ignore);
-            Array.Sort(hits, (left, right) => left.distance.CompareTo(right.distance));
 
-            foreach (RaycastHit hit in hits)
+            target = null;
+            targetHit = default;
+            float closestDistance = float.PositiveInfinity;
+
+            for (int i = 0; i < hitCount; i++)
             {
+                RaycastHit hit = aimHits[i];
                 if (hit.transform.IsChildOf(transform))
                 {
                     continue;
                 }
 
-                target = hit.collider.GetComponentInParent<IDamageable>();
+                IDamageable candidate =
+                    hit.collider.GetComponentInParent<IDamageable>();
+                if (candidate == null ||
+                    candidate is PlayerController ||
+                    candidate.IsDead ||
+                    hit.distance >= closestDistance)
+                {
+                    continue;
+                }
+
+                target = candidate;
                 targetHit = hit;
-                return target != null &&
-                       target is not PlayerController &&
-                       !target.IsDead;
+                closestDistance = hit.distance;
             }
 
-            target = null;
-            targetHit = default;
-            return false;
+            return target != null;
         }
     }
 }
