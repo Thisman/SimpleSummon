@@ -90,9 +90,7 @@ namespace SimpleSummon.Runtime
             }
 
             interactionTriggered = true;
-            bool isLocalPresentation =
-                currentActor.GetComponentInChildren<InstructionInteraction>(true) != null;
-            if (isLocalPresentation ||
+            if (currentActor.IsLocalPresentation ||
                 networkPlayer == null ||
                 !networkPlayer.IsSpawned)
             {

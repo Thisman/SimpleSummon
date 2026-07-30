@@ -132,7 +132,7 @@ namespace SimpleSummon.Network
 
         public void SetInventoryQuantity(string itemName, int quantity)
         {
-            if (IsSpawned && !IsServer)
+            if (!IsSpawned || !IsServer)
             {
                 return;
             }
