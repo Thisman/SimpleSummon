@@ -100,6 +100,7 @@ namespace SimpleSummon.Runtime
             instruction.InstructionText.SetActive(true);
             SetExitHintActive(true);
             SetPlayerRenderingOff(true);
+            InteractiveMarker.SetMarkersVisible(false);
             exitInput.Enable();
         }
 
@@ -109,6 +110,7 @@ namespace SimpleSummon.Runtime
             activeInstruction.InstructionText.SetActive(false);
             SetExitHintActive(false);
             SetPlayerRenderingOff(false);
+            InteractiveMarker.SetMarkersVisible(true);
             activeInstruction = null;
 
             cameraTransform.localPosition = gameplayCameraLocalPosition;
