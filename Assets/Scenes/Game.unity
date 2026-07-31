@@ -45052,7 +45052,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SimpleSummon.Network.NetworkSummonRitual
   ShowTopMostFoldoutHeaderGroup: 1
-  questState: {fileID: 0}
+  questState: {fileID: 429919298}
 --- !u!114 &1185498264
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -45152,6 +45152,7 @@ MonoBehaviour:
   ritual: {fileID: 1185498263}
   drawingBounds: {fileID: 1185498261}
   lineMaterial: {fileID: 0}
+  lineShader: {fileID: 4800000, guid: 650dd9526735d5b46b79224bc6e94025, type: 3}
   lineColor: {r: 1, g: 1, b: 1, a: 1}
   lineWidth: 0.16
   widthMultiplier: 1

@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
+using UnityEngine.Rendering;
 
 public static class ProductionBuild
 {
@@ -41,7 +42,26 @@ public static class ProductionBuild
             options = BuildOptions.CompressWithLz4HC
         };
 
-        BuildReport report = BuildPipeline.BuildPlayer(options);
+        bool usedDefaultGraphicsApis =
+            PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.StandaloneWindows64);
+        GraphicsDeviceType[] graphicsApis =
+            PlayerSettings.GetGraphicsAPIs(BuildTarget.StandaloneWindows64);
+        BuildReport report;
+        try
+        {
+            PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.StandaloneWindows64, false);
+            PlayerSettings.SetGraphicsAPIs(
+                BuildTarget.StandaloneWindows64,
+                new[] { GraphicsDeviceType.Direct3D11 });
+            report = BuildPipeline.BuildPlayer(options);
+        }
+        finally
+        {
+            PlayerSettings.SetGraphicsAPIs(BuildTarget.StandaloneWindows64, graphicsApis);
+            PlayerSettings.SetUseDefaultGraphicsAPIs(
+                BuildTarget.StandaloneWindows64,
+                usedDefaultGraphicsApis);
+        }
         BuildSummary summary = report.summary;
 
         if (summary.result != BuildResult.Succeeded)

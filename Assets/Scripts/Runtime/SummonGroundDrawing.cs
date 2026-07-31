@@ -10,6 +10,7 @@ namespace SimpleSummon.Runtime
         [SerializeField] private NetworkSummonRitual ritual;
         [SerializeField] private BoxCollider drawingBounds;
         [SerializeField] private Material lineMaterial;
+        [SerializeField] private Shader lineShader;
         [SerializeField] private Color lineColor = Color.white;
         [SerializeField, Min(0.001f)] private float lineWidth = 0.16f;
         [SerializeField, Min(0.01f)] private float widthMultiplier = 1f;
@@ -30,7 +31,9 @@ namespace SimpleSummon.Runtime
             }
             else
             {
-                Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+                Shader shader = lineShader != null
+                    ? lineShader
+                    : Shader.Find("Universal Render Pipeline/Unlit");
                 if (shader != null)
                 {
                     runtimeMaterial = new Material(shader)
