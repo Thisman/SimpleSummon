@@ -46,6 +46,7 @@ namespace SimpleSummon.Runtime
             ["lobby.code_copied"] = ("Код комнаты скопирован.", "Room code copied."),
             ["game.summon"] = ("Призвать", "Summon"),
             ["game.exit_drawing"] = ("Нажмите Esc чтобы выйти", "Press Esc to exit"),
+            ["game.drawing_controls"] = ("Зажмите Shift + ЛКМ, чтобы стереть\nНажмите Esc чтобы выйти", "Hold Shift + LMB to erase\nPress Esc to exit"),
             ["game.draw_sign"] = ("Нарисуйте знак призыва", "Draw the summoning sign"),
             ["game.instructions"] = ("Для призыва нужен\n\n- Знак призыва\n- Сердце Босса\n- Чаша маны\n- to be continue\n- to be continue ", "The ritual requires\n\n- A summoning sign\n- The Boss's heart\n- A bowl of mana\n- to be continued\n- to be continued"),
             ["game.exit_reading"] = ("Нажмите Esc чтобы выйти из просмотра", "Press Esc to stop reading"),

@@ -130,6 +130,19 @@ namespace SimpleSummon.Network
             ReleaseRpc();
         }
 
+        public void Erase(Vector2 position, float radius)
+        {
+            radius = Mathf.Clamp(radius, 0.005f, 0.2f);
+            if (!IsSpawned)
+            {
+                ErasePoints(offlinePoints, position, radius);
+                DrawingChanged?.Invoke();
+                return;
+            }
+
+            EraseRpc(position, radius);
+        }
+
         public void Finish()
         {
             if (!IsSpawned)
@@ -174,6 +187,23 @@ namespace SimpleSummon.Network
         private void ReleaseRpc(RpcParams rpcParams = default)
         {
             ReleaseOnServer(rpcParams.Receive.SenderClientId);
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void EraseRpc(
+            Vector2 position,
+            float radius,
+            RpcParams rpcParams = default)
+        {
+            if (rpcParams.Receive.SenderClientId != drawingClientId.Value ||
+                state.Value != SummonRitualState.Claimed ||
+                Time.unscaledTime < nextBatchTime)
+            {
+                return;
+            }
+
+            nextBatchTime = Time.unscaledTime + MinimumBatchInterval;
+            EraseNetworkPoints(position, Mathf.Clamp(radius, 0.005f, 0.2f));
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
@@ -246,6 +276,61 @@ namespace SimpleSummon.Network
 
             point = IsSpawned ? points[count - 1] : offlinePoints[count - 1];
             return true;
+        }
+
+        private static void ErasePoints(
+            IList<NetworkSummonPoint> targetPoints,
+            Vector2 position,
+            float radius)
+        {
+            float squareRadius = radius * radius;
+            bool removedPrevious = false;
+            for (int i = targetPoints.Count - 1; i >= 0; i--)
+            {
+                if ((targetPoints[i].Position - position).sqrMagnitude <= squareRadius)
+                {
+                    targetPoints.RemoveAt(i);
+                    removedPrevious = true;
+                }
+                else if (removedPrevious)
+                {
+                    if (i + 1 < targetPoints.Count)
+                    {
+                        NetworkSummonPoint next = targetPoints[i + 1];
+                        next.StartsStroke = true;
+                        targetPoints[i + 1] = next;
+                    }
+                    removedPrevious = false;
+                }
+            }
+
+            if (targetPoints.Count > 0 && removedPrevious)
+            {
+                NetworkSummonPoint first = targetPoints[0];
+                first.StartsStroke = true;
+                targetPoints[0] = first;
+            }
+        }
+
+        private void EraseNetworkPoints(Vector2 position, float radius)
+        {
+            List<NetworkSummonPoint> remainingPoints = new(points.Count);
+            for (int i = 0; i < points.Count; i++)
+            {
+                remainingPoints.Add(points[i]);
+            }
+
+            ErasePoints(remainingPoints, position, radius);
+            if (remainingPoints.Count == points.Count)
+            {
+                return;
+            }
+
+            points.Clear();
+            foreach (NetworkSummonPoint point in remainingPoints)
+            {
+                points.Add(point);
+            }
         }
 
         private void ReleaseOnServer(ulong clientId)

@@ -138,7 +138,10 @@ namespace SimpleSummon.Editor
                 PrefabUtility.IsPartOfPrefabInstance(drawingHint)) return;
             Transform parent = drawingHint.transform.parent;
             Object.DestroyImmediate(drawingHint);
-            CreateHint(prefab, parent, "Drawing Exit Hint", "Нажмите Esc чтобы выйти");
+            GameObject hint = CreateHint(prefab, parent, "Drawing Exit Hint",
+                "Зажмите Shift + ЛКМ, чтобы стереть\nНажмите Esc чтобы выйти");
+            ((RectTransform)hint.transform).SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Vertical, 72f);
         }
 
         private static GameObject CreateHint(

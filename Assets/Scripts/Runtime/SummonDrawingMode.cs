@@ -16,12 +16,14 @@ namespace SimpleSummon.Runtime
         [SerializeField] private InputActionAsset inputActions;
         [SerializeField, Min(0.001f)] private float minimumPointDistance = 0.005f;
         [SerializeField, Min(0.01f)] private float sendInterval = 0.05f;
+        [SerializeField, Range(0.005f, 0.2f)] private float eraserRadius = 0.04f;
 
         private readonly List<NetworkSummonPoint> pendingPoints = new();
         private NetworkSummonRitual ritual;
         private InputActionMap drawingMap;
         private InputAction pointAction;
         private InputAction drawAction;
+        private InputAction eraseAction;
         private InputAction exitAction;
         private GameObject summonContainer;
         private RectTransform signContainer;
@@ -38,6 +40,7 @@ namespace SimpleSummon.Runtime
                 : CreateDrawingMap();
             pointAction = drawingMap.FindAction("Point", true);
             drawAction = drawingMap.FindAction("Draw", true);
+            eraseAction = drawingMap.FindAction("Erase", true);
             exitAction = drawingMap.FindAction("Exit", true);
             drawingMap.Disable();
         }
@@ -79,6 +82,19 @@ namespace SimpleSummon.Runtime
             bool pressed = drawAction.IsPressed();
             if (pressed && TryReadPoint(out Vector2 point))
             {
+                if (eraseAction.IsPressed())
+                {
+                    drawing = false;
+                    FlushPoints();
+                    sendTime += Time.unscaledDeltaTime;
+                    if (sendTime >= sendInterval)
+                    {
+                        ritual.Erase(point, eraserRadius);
+                        sendTime = 0f;
+                    }
+                    return;
+                }
+
                 if (!drawing)
                 {
                     drawing = true;
@@ -254,6 +270,11 @@ namespace SimpleSummon.Runtime
                 InputActionType.Button,
                 "<Keyboard>/escape");
             exit.expectedControlType = "Button";
+            InputAction erase = map.AddAction(
+                "Erase",
+                InputActionType.Button,
+                "<Keyboard>/shift");
+            erase.expectedControlType = "Button";
             return map;
         }
     }
