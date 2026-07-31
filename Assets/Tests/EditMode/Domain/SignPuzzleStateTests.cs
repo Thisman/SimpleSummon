@@ -61,11 +61,11 @@ namespace SimpleSummon.Domain.Tests
             {
                 0, 1, 2,
                 3, 4, 5,
-                7, SignPuzzleState.Empty, SignPuzzleState.Empty
+                SignPuzzleState.Empty, 7, SignPuzzleState.Empty
             };
 
             Assert.That(SignPuzzleState.TryAddFragment(slots, 6, 0), Is.True);
-            Assert.That(slots[7], Is.EqualTo(6));
+            Assert.That(slots[6], Is.EqualTo(6));
             Assert.That(slots[8], Is.EqualTo(SignPuzzleState.Empty));
         }
 
