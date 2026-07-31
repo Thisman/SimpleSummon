@@ -18,9 +18,14 @@ public static class ProductionBuild
     public static void BuildWindows()
     {
         string outputPath = GetOutputPath();
+        string buildVersion = GetArgument("-buildVersion");
         string outputDirectory = Path.GetDirectoryName(outputPath);
         if (!string.IsNullOrEmpty(outputDirectory))
         {
+            if (Directory.Exists(outputDirectory))
+            {
+                Directory.Delete(outputDirectory, true);
+            }
             Directory.CreateDirectory(outputDirectory);
         }
 
@@ -39,16 +44,22 @@ public static class ProductionBuild
             scenes = scenes,
             locationPathName = outputPath,
             target = BuildTarget.StandaloneWindows64,
-            options = BuildOptions.CompressWithLz4HC
+            options = BuildOptions.CompressWithLz4HC | BuildOptions.CleanBuildCache
         };
 
         bool usedDefaultGraphicsApis =
             PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.StandaloneWindows64);
         GraphicsDeviceType[] graphicsApis =
             PlayerSettings.GetGraphicsAPIs(BuildTarget.StandaloneWindows64);
+        string originalVersion = PlayerSettings.bundleVersion;
         BuildReport report;
         try
         {
+            if (!string.IsNullOrWhiteSpace(buildVersion))
+            {
+                PlayerSettings.bundleVersion = buildVersion;
+            }
+
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.StandaloneWindows64, false);
             PlayerSettings.SetGraphicsAPIs(
                 BuildTarget.StandaloneWindows64,
@@ -57,6 +68,7 @@ public static class ProductionBuild
         }
         finally
         {
+            PlayerSettings.bundleVersion = originalVersion;
             PlayerSettings.SetGraphicsAPIs(BuildTarget.StandaloneWindows64, graphicsApis);
             PlayerSettings.SetUseDefaultGraphicsAPIs(
                 BuildTarget.StandaloneWindows64,
@@ -76,15 +88,21 @@ public static class ProductionBuild
 
     private static string GetOutputPath()
     {
+        string value = GetArgument("-buildOutput");
+        return string.IsNullOrWhiteSpace(value) ? DefaultOutputPath : value;
+    }
+
+    private static string GetArgument(string name)
+    {
         string[] args = Environment.GetCommandLineArgs();
         for (int index = 0; index < args.Length - 1; index++)
         {
-            if (string.Equals(args[index], "-buildOutput", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(args[index], name, StringComparison.OrdinalIgnoreCase))
             {
                 return args[index + 1];
             }
         }
 
-        return DefaultOutputPath;
+        return null;
     }
 }

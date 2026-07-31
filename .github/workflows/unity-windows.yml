@@ -1,0 +1,196 @@
+name: Unity Windows Build
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: unity-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  checks: write
+
+env:
+  UNITY_VERSION: 6000.5.1f1
+
+jobs:
+  test:
+    name: EditMode tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: Library
+          key: Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-tests-${{ hashFiles('Packages/**', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-tests-
+            Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-
+
+      - name: Run EditMode tests
+        id: tests
+        uses: game-ci/unity-test-runner@0ff419b913a3630032cbe0de48a0099b5a9f0ed9 # v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          testMode: EditMode
+          artifactsPath: test-results
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Unity EditMode tests
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: unity-test-results-${{ github.run_number }}
+          path: ${{ steps.tests.outputs.artifactsPath }}
+          if-no-files-found: warn
+          retention-days: 14
+
+  build:
+    name: Production Windows x64
+    if: github.event_name != 'pull_request'
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Resolve version and release channel
+        id: version
+        shell: pwsh
+        run: |
+          $baseVersion = (Select-String -Path ProjectSettings/ProjectSettings.asset -Pattern '^  bundleVersion:').Line.Split(':', 2)[1].Trim()
+          if ('${{ github.ref_type }}' -eq 'tag') {
+            $version = '${{ github.ref_name }}'.TrimStart('v')
+            $channel = 'stable'
+          } else {
+            $version = "$baseVersion-main.${{ github.run_number }}"
+            $channel = 'main'
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "channel=$channel" >> $env:GITHUB_OUTPUT
+          "Version: $version" >> $env:GITHUB_STEP_SUMMARY
+          "Channel: $channel" >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Find previous release commit
+        id: previous
+        shell: bash
+        run: |
+          if [[ "${{ steps.version.outputs.channel }}" == "stable" ]]; then
+            previous_ref=$(git describe --tags --abbrev=0 HEAD^ --match 'v[0-9]*' 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          else
+            previous_ref=$(git rev-parse latest-main 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          fi
+          echo "ref=$previous_ref" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Unity Library
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: Library
+          key: Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-windows-${{ hashFiles('Packages/**', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-windows-
+            Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-
+
+      - name: Build Windows production player
+        id: unity-build
+        uses: game-ci/unity-builder@1d4ee0697f193f54668e98961d79907911f4b4f2 # v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: StandaloneWindows64
+          buildMethod: ProductionBuild.BuildWindows
+          versioning: Custom
+          version: ${{ steps.version.outputs.version }}
+          buildsPath: build
+          customParameters: -buildOutput build/StandaloneWindows64/SimpleSummon.exe -buildVersion ${{ steps.version.outputs.version }}
+
+      - name: Package build and generate release notes
+        shell: pwsh
+        run: |
+          ./.github/scripts/Package-Build.ps1 `
+            -BuildDirectory build/StandaloneWindows64 `
+            -OutputDirectory dist `
+            -Version '${{ steps.version.outputs.version }}' `
+            -Commit '${{ github.sha }}' `
+            -Repository '${{ github.repository }}' `
+            -RunNumber '${{ github.run_number }}' `
+            -PreviousRef '${{ steps.previous.outputs.ref }}' `
+            -Channel '${{ steps.version.outputs.channel }}'
+
+      - name: Upload downloadable build artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: SimpleSummon-Windows-${{ steps.version.outputs.version }}
+          path: |
+            dist/*.zip
+            dist/*.sha256
+            dist/RELEASE_NOTES.md
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Publish GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+          CHANNEL: ${{ steps.version.outputs.channel }}
+        run: |
+          if [[ "$CHANNEL" == "stable" ]]; then
+            release_tag="${{ github.ref_name }}"
+            release_title="SimpleSummon $VERSION"
+            prerelease_flag=""
+          else
+            release_tag="latest-main"
+            release_title="SimpleSummon latest main ($VERSION)"
+            prerelease_flag="--prerelease"
+            git tag --force "$release_tag" "${{ github.sha }}"
+            git push origin "refs/tags/$release_tag" --force
+          fi
+
+          if gh release view "$release_tag" >/dev/null 2>&1; then
+            while IFS= read -r asset; do
+              [[ -n "$asset" ]] && gh release delete-asset "$release_tag" "$asset" --yes
+            done < <(gh release view "$release_tag" --json assets --jq '.assets[].name')
+            gh release edit "$release_tag" \
+              --title "$release_title" \
+              --notes-file dist/RELEASE_NOTES.md \
+              $prerelease_flag
+          else
+            gh release create "$release_tag" \
+              --target "${{ github.sha }}" \
+              --title "$release_title" \
+              --notes-file dist/RELEASE_NOTES.md \
+              $prerelease_flag
+          fi
+
+          gh release upload "$release_tag" dist/*.zip dist/*.sha256 --clobber
+          echo "## Download" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://github.com/${{ github.repository }}/releases/tag/$release_tag" >> "$GITHUB_STEP_SUMMARY"
