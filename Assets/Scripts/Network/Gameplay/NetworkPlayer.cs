@@ -243,7 +243,9 @@ namespace SimpleSummon.Network
                     continue;
                 }
 
-                Vector3 closestPoint = targetCollider.ClosestPoint(transform.position);
+                Vector3 closestPoint = targetCollider is MeshCollider { convex: false }
+                    ? targetCollider.bounds.ClosestPoint(transform.position)
+                    : targetCollider.ClosestPoint(transform.position);
                 if ((closestPoint - transform.position).sqrMagnitude <= maximumSqrDistance)
                 {
                     return true;

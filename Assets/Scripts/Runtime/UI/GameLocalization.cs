@@ -62,6 +62,12 @@ namespace SimpleSummon.Runtime
             ["session.host_closed"] = ("Хост закрыл комнату.", "The host closed the room."),
             ["session.host_lost"] = ("Соединение с хостом потеряно.", "Connection to the host was lost.")
         };
+        private static readonly Dictionary<string, (string Ru, string En)> SignPuzzleEntries = new()
+        {
+            ["interaction.build_sign"] = ("Нажмите E, чтобы собрать знак", "Press E to assemble the sign"),
+            ["game.exit_sign_puzzle"] = ("Нажмите Esc чтобы выйти из сборки знака", "Press Esc to stop assembling the sign"),
+            ["game.assemble_sign"] = ("Соберите знак", "Assemble the sign")
+        };
         private static string selectedCode;
 
         public static event Action LocaleChanged;
@@ -91,7 +97,8 @@ namespace SimpleSummon.Runtime
 
         public static string Get(string key)
         {
-            if (!Entries.TryGetValue(key, out var entry))
+            if (!Entries.TryGetValue(key, out var entry) &&
+                !SignPuzzleEntries.TryGetValue(key, out entry))
             {
                 return key;
             }
@@ -102,6 +109,14 @@ namespace SimpleSummon.Runtime
         public static bool TryGetKey(string value, out string key)
         {
             string normalized = value?.Replace("\r\n", "\n").Trim();
+            foreach (var pair in SignPuzzleEntries)
+            {
+                if (pair.Value.Ru.Trim() == normalized || pair.Value.En.Trim() == normalized)
+                {
+                    key = pair.Key;
+                    return true;
+                }
+            }
             foreach (var pair in Entries)
             {
                 if (pair.Value.Ru.Trim() == normalized || pair.Value.En.Trim() == normalized)
@@ -117,7 +132,18 @@ namespace SimpleSummon.Runtime
 
         public static string TranslateRaw(string value)
         {
-            return value != null && RawTextKeys.TryGetValue(value.Trim(), out string key) ? Get(key) : value;
+            if (value == null)
+            {
+                return null;
+            }
+
+            if (RawTextKeys.TryGetValue(value.Trim(), out string key) ||
+                TryGetKey(value, out key))
+            {
+                return Get(key);
+            }
+
+            return value;
         }
     }
 

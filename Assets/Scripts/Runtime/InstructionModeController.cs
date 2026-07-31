@@ -11,7 +11,7 @@ namespace SimpleSummon.Runtime
         [SerializeField] private OrbitCameraController lookController;
         [SerializeField] private Transform cameraTransform;
         [SerializeField] private InputActionReference exitAction;
-        [SerializeField] private GameObject exitHint;
+        [SerializeField] private GameObject instructionContainer;
         [SerializeField] private Renderer[] playerRenderers;
 
         private InstructionInteraction activeInstruction;
@@ -38,7 +38,7 @@ namespace SimpleSummon.Runtime
             gameplayCameraLocalScale = cameraTransform.localScale;
 
             exitInput.Disable();
-            SetExitHintActive(false);
+            SetInstructionPanelActive(false);
         }
 
         private void OnEnable()
@@ -97,7 +97,7 @@ namespace SimpleSummon.Runtime
                 instruction.CameraRotation);
             cameraTransform.localScale = instruction.CameraScale;
 
-            SetExitHintActive(true);
+            SetInstructionPanelActive(true);
             SetPlayerRenderingOff(true);
             InteractiveMarker.SetMarkersVisible(false);
             exitInput.Enable();
@@ -106,7 +106,7 @@ namespace SimpleSummon.Runtime
         private void Exit()
         {
             exitInput.Disable();
-            SetExitHintActive(false);
+            SetInstructionPanelActive(false);
             SetPlayerRenderingOff(false);
             InteractiveMarker.SetMarkersVisible(true);
             activeInstruction = null;
@@ -133,16 +133,16 @@ namespace SimpleSummon.Runtime
             }
         }
 
-        private void SetExitHintActive(bool active)
+        private void SetInstructionPanelActive(bool active)
         {
-            if (exitHint == null && LocalPlayerHud.Instance != null)
+            if (instructionContainer == null && LocalPlayerHud.Instance != null)
             {
-                exitHint = LocalPlayerHud.Instance.InstructionExitHint;
+                instructionContainer = LocalPlayerHud.Instance.InstructionContainer;
             }
 
-            if (exitHint != null)
+            if (instructionContainer != null)
             {
-                exitHint.SetActive(active);
+                instructionContainer.SetActive(active);
             }
         }
     }
