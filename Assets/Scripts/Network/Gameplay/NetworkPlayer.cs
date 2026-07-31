@@ -14,7 +14,6 @@ namespace SimpleSummon.Network
         private readonly NetworkVariable<bool> dead = new();
         private readonly NetworkVariable<int> damageSequence = new();
         private readonly NetworkVariable<FixedString64Bytes> nickname = new("Player");
-        private readonly NetworkList<NetworkInventoryEntry> inventory = new();
 
         private Vector3 serverMoveDirection;
         private bool serverJumpRequested;
@@ -26,7 +25,6 @@ namespace SimpleSummon.Network
 
         public event Action RoleChanged;
         public event Action<float, bool> VitalStateChanged;
-        public event Action InventoryChanged;
         public event Action DamageReceived;
         public event Action<string> NicknameChanged;
 
@@ -46,14 +44,12 @@ namespace SimpleSummon.Network
             dead.OnValueChanged += HandleDeadChanged;
             damageSequence.OnValueChanged += HandleDamageSequenceChanged;
             nickname.OnValueChanged += HandleNicknameChanged;
-            inventory.OnListChanged += HandleInventoryChanged;
             if (IsOwner)
             {
                 SetNickname(NicknameStorage.Load());
             }
             RoleChanged?.Invoke();
             VitalStateChanged?.Invoke(health.Value, dead.Value);
-            InventoryChanged?.Invoke();
             NicknameChanged?.Invoke(Nickname);
         }
 
@@ -63,7 +59,6 @@ namespace SimpleSummon.Network
             dead.OnValueChanged -= HandleDeadChanged;
             damageSequence.OnValueChanged -= HandleDamageSequenceChanged;
             nickname.OnValueChanged -= HandleNicknameChanged;
-            inventory.OnListChanged -= HandleInventoryChanged;
             RoleChanged?.Invoke();
         }
 
@@ -183,48 +178,6 @@ namespace SimpleSummon.Network
             SetSceneObjectVisibleRpc(target, false);
         }
 
-        public void SetInventoryQuantity(string itemName, int quantity)
-        {
-            if (!IsSpawned || !IsServer)
-            {
-                return;
-            }
-
-            for (int i = 0; i < inventory.Count; i++)
-            {
-                if (inventory[i].ItemName.ToString() != itemName)
-                {
-                    continue;
-                }
-
-                inventory[i] = new NetworkInventoryEntry(itemName, quantity);
-                return;
-            }
-
-            inventory.Add(new NetworkInventoryEntry(itemName, quantity));
-        }
-
-        public int GetInventoryQuantity(string itemName)
-        {
-            foreach (NetworkInventoryEntry entry in inventory)
-            {
-                if (entry.ItemName.ToString() == itemName)
-                {
-                    return entry.Quantity;
-                }
-            }
-
-            return 0;
-        }
-
-        public void CopyInventoryTo(Action<string, int> receiveEntry)
-        {
-            foreach (NetworkInventoryEntry entry in inventory)
-            {
-                receiveEntry(entry.ItemName.ToString(), entry.Quantity);
-            }
-        }
-
         [Rpc(SendTo.Server)]
         private void SubmitInputRpc(
             Vector3 moveDirection,
@@ -333,12 +286,6 @@ namespace SimpleSummon.Network
         private void HandleDeadChanged(bool _, bool value)
         {
             VitalStateChanged?.Invoke(health.Value, value);
-        }
-
-        private void HandleInventoryChanged(
-            NetworkListEvent<NetworkInventoryEntry> _)
-        {
-            InventoryChanged?.Invoke();
         }
 
         private void HandleDamageSequenceChanged(int _, int value)

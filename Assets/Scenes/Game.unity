@@ -44630,6 +44630,7 @@ GameObject:
   - component: {fileID: 1185498266}
   - component: {fileID: 1185498267}
   - component: {fileID: 1185498268}
+  - component: {fileID: 1185498269}
   m_Layer: 0
   m_Name: SummonTrigger
   m_TagString: Interactive
@@ -44712,7 +44713,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aadf3e9309c1453c8b3d4344cc3a73aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SimpleSummon.Network.NetworkSummonRitual
+  questState: {fileID: 1185498269}
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &1185498269
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1185498259}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e28448c9a874790842e6f9148e6bbcb, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SimpleSummon.Network::SimpleSummon.Network.NetworkQuestState
 --- !u!114 &1185498264
 MonoBehaviour:
   m_ObjectHideFlags: 0

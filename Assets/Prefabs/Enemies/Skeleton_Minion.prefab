@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 7588611357754454482}
   - component: {fileID: 894139486025624212}
-  - component: {fileID: 7224772679339154754}
   m_Layer: 0
   m_Name: DeathInteraction
   m_TagString: Interactive
@@ -56,21 +55,6 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 1, z: 0}
---- !u!114 &7224772679339154754
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3800104473881438672}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c282e3cd17984236994bd7051fc6b9f7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SimpleSummon.Runtime.InteractiveActor
-  interactionText: "\u0417\u0430\u0436\u043C\u0438\u0442\u0435 \u0415, \u0447\u0442\u043E\u0431\u044B
-    \u0441\u043E\u0431\u0440\u0430\u0442\u044C \u043A\u043E\u0441\u0442\u0438"
-  interactionTarget: {fileID: 673200749124602853}
 --- !u!1001 &7362283833710408184
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -154,9 +138,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 45e6c2dd56f3013408293985837c94ba, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4115055059928265482}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 45e6c2dd56f3013408293985837c94ba, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 673200749124602853}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 45e6c2dd56f3013408293985837c94ba, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6845768080761049029}
@@ -293,7 +274,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SimpleSummon.Runtime.EnemyController
   animator: {fileID: 5949250879903073533}
   damageFlash: {fileID: 5017380995054657355}
-  deathInteractionRoot: {fileID: 3800104473881438672}
 --- !u!95 &5949250879903073533
 Animator:
   serializedVersion: 7
@@ -379,20 +359,6 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 3
---- !u!114 &673200749124602853
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7704955215528971433}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 54d1ccecf10ddf242aad6d18da91ee3b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SimpleSummon.Runtime.BoneCollectionInteraction
-  itemName: Bones
-  quantity: 1
 --- !u!114 &6845768080761049029
 MonoBehaviour:
   m_ObjectHideFlags: 0

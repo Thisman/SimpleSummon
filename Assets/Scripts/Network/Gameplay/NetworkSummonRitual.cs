@@ -22,6 +22,8 @@ namespace SimpleSummon.Network
         private const float MinimumPointDistance = 0.001f;
         private const float MinimumBatchInterval = 1f / 30f;
 
+        [SerializeField] private NetworkQuestState questState;
+
         private readonly NetworkVariable<SummonRitualState> state =
             new(SummonRitualState.Available);
         private readonly NetworkVariable<ulong> drawingClientId = new(NoOwner);
@@ -137,6 +139,7 @@ namespace SimpleSummon.Network
                 {
                     offlineDrawingClientId = NoOwner;
                     offlineState = SummonRitualState.Finished;
+                    questState.RecordSignDrawn();
                     StateChanged?.Invoke();
                 }
                 return;
@@ -268,6 +271,7 @@ namespace SimpleSummon.Network
 
             drawingClientId.Value = NoOwner;
             state.Value = SummonRitualState.Finished;
+            questState.RecordSignDrawn();
         }
 
         private void HandleClientDisconnected(ulong clientId)

@@ -29,7 +29,6 @@ namespace SimpleSummon.Runtime
 
         [SerializeField] private Animator animator;
         [SerializeField] private DamageFlash damageFlash;
-        [SerializeField] private GameObject deathInteractionRoot;
 
         private EnemySettings settings;
         private NavMeshAgent agent;
@@ -56,7 +55,6 @@ namespace SimpleSummon.Runtime
             homePosition = transform.position;
             agent.speed = model.MovementSpeed;
             agent.stoppingDistance = settings.AttackRadius;
-            deathInteractionRoot.SetActive(false);
         }
 
         private void OnEnable()
@@ -211,7 +209,7 @@ namespace SimpleSummon.Runtime
             GetComponent<CapsuleCollider>().enabled = false;
             animator.SetFloat(MovementSpeedId, 0f);
             animator.SetTrigger(DeathId);
-            networkState?.Publish(true, false);
+            networkState?.Publish(true);
         }
 
         public void CompleteDeathAnimation()
@@ -223,15 +221,10 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            if (state == State.Dead)
-            {
-                deathInteractionRoot.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-                deathInteractionRoot.SetActive(true);
-                networkState?.Publish(true, true);
-            }
+            networkState?.Publish(true);
         }
 
-        private void ApplyReplicatedState(bool isDead, bool isLootVisible)
+        private void ApplyReplicatedState(bool isDead)
         {
             if (networkState == null || networkState.IsServer)
             {
@@ -245,13 +238,6 @@ namespace SimpleSummon.Runtime
                 GetComponent<CapsuleCollider>().enabled = false;
                 animator.SetFloat(MovementSpeedId, 0f);
                 animator.SetTrigger(DeathId);
-            }
-
-            deathInteractionRoot.SetActive(isLootVisible);
-            if (isLootVisible)
-            {
-                deathInteractionRoot.transform.localRotation =
-                    Quaternion.Euler(90f, 0f, 0f);
             }
         }
 
