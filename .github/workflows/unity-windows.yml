@@ -100,9 +100,9 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ steps.version.outputs.channel }}" == "stable" ]]; then
-            previous_ref=$(git describe --tags --abbrev=0 HEAD^ --match 'v[0-9]*' 2>/dev/null || git rev-list --max-parents=0 HEAD)
+            previous_ref=$(git describe --tags --abbrev=0 HEAD^ --match 'v[0-9]*' 2>/dev/null || git rev-list --max-parents=0 HEAD | head -n 1)
           else
-            previous_ref=$(git rev-parse latest-main 2>/dev/null || git rev-list --max-parents=0 HEAD)
+            previous_ref=$(git rev-parse --verify --quiet 'refs/tags/latest-main^{commit}' || git rev-list --max-parents=0 HEAD | head -n 1)
           fi
           echo "ref=$previous_ref" >> "$GITHUB_OUTPUT"
 
