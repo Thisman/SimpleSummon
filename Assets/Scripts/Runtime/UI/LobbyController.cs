@@ -19,6 +19,8 @@ namespace SimpleSummon.Runtime
 
         private readonly List<LobbyPlayerEntryView> entries = new();
         private NetworkSessionService sessionService;
+        private string statusKey;
+        private string statusRaw;
 
         private void Awake()
         {
@@ -28,6 +30,7 @@ namespace SimpleSummon.Runtime
             leaveButton.onClick.AddListener(Leave);
             sessionService.SessionChanged += Refresh;
             sessionService.SessionClosed += HandleSessionClosed;
+            GameLocalization.LocaleChanged += RefreshStatus;
             Refresh();
         }
 
@@ -41,37 +44,38 @@ namespace SimpleSummon.Runtime
                 sessionService.SessionChanged -= Refresh;
                 sessionService.SessionClosed -= HandleSessionClosed;
             }
+            GameLocalization.LocaleChanged -= RefreshStatus;
         }
 
         private void CopyCode()
         {
             GUIUtility.systemCopyBuffer = sessionService.JoinCode;
-            statusText.text = "Код комнаты скопирован.";
+            SetStatus("lobby.code_copied");
         }
 
         private async void StartGame()
         {
-            statusText.text = string.Empty;
+            ClearStatus();
             try
             {
                 await sessionService.StartGameAsync();
             }
             catch (Exception)
             {
-                statusText.text = "Не удалось запустить игру.";
+                SetStatus("error.start_game");
             }
         }
 
         private async void Leave()
         {
-            statusText.text = string.Empty;
+            ClearStatus();
             try
             {
                 await sessionService.LeaveAsync();
             }
             catch (Exception)
             {
-                statusText.text = "Не удалось корректно покинуть комнату.";
+                SetStatus("error.leave_room");
             }
         }
 
@@ -104,7 +108,30 @@ namespace SimpleSummon.Runtime
 
         private void HandleSessionClosed(string message)
         {
-            statusText.text = message;
+            statusKey = null;
+            statusRaw = message;
+            RefreshStatus();
+        }
+
+        private void SetStatus(string key)
+        {
+            statusKey = key;
+            statusRaw = null;
+            RefreshStatus();
+        }
+
+        private void ClearStatus()
+        {
+            statusKey = null;
+            statusRaw = null;
+            statusText.text = string.Empty;
+        }
+
+        private void RefreshStatus()
+        {
+            statusText.text = !string.IsNullOrEmpty(statusKey)
+                ? GameLocalization.Get(statusKey)
+                : GameLocalization.TranslateRaw(statusRaw ?? string.Empty);
         }
     }
 }

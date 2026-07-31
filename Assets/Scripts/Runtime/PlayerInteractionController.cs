@@ -154,7 +154,7 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            ResolvePromptView()?.Show(currentActor.InteractionText);
+            ResolvePromptView()?.Show(GameLocalization.TranslateRaw(currentActor.InteractionText));
         }
 
         private void ResetProgress()

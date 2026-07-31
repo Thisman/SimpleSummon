@@ -15,19 +15,23 @@ namespace SimpleSummon.Runtime
         [SerializeField] private GameObject progressIndicator;
 
         private NetworkSessionService sessionService;
+        private string statusKey;
+        private string statusRaw;
 
         private void Awake()
         {
             sessionService = NetworkSessionService.Instance;
             nicknameInput.text = NicknameStorage.Load();
             roomCodeInput.text = NetworkSessionService.NormalizeCode(roomCodeInput.text);
-            statusText.text = sessionService.ConsumeLastMessage();
+            statusRaw = sessionService.ConsumeLastMessage();
+            RefreshStatus();
 
             nicknameInput.onValueChanged.AddListener(HandleInputChanged);
             roomCodeInput.onValueChanged.AddListener(HandleRoomCodeChanged);
             createRoomButton.onClick.AddListener(CreateRoom);
             joinRoomButton.onClick.AddListener(JoinRoom);
             sessionService.SessionChanged += Refresh;
+            GameLocalization.LocaleChanged += RefreshStatus;
             Refresh();
         }
 
@@ -41,6 +45,7 @@ namespace SimpleSummon.Runtime
             {
                 sessionService.SessionChanged -= Refresh;
             }
+            GameLocalization.LocaleChanged -= RefreshStatus;
         }
 
         private void HandleInputChanged(string _)
@@ -61,27 +66,27 @@ namespace SimpleSummon.Runtime
 
         private async void CreateRoom()
         {
-            statusText.text = string.Empty;
+            ClearStatus();
             try
             {
                 await sessionService.CreateRoomAsync(nicknameInput.text);
             }
             catch (Exception exception)
             {
-                statusText.text = GetUserMessage(exception);
+                SetStatus(GetUserMessageKey(exception));
             }
         }
 
         private async void JoinRoom()
         {
-            statusText.text = string.Empty;
+            ClearStatus();
             try
             {
                 await sessionService.JoinRoomAsync(roomCodeInput.text, nicknameInput.text);
             }
             catch (Exception exception)
             {
-                statusText.text = GetUserMessage(exception);
+                SetStatus(GetUserMessageKey(exception));
             }
         }
 
@@ -98,25 +103,46 @@ namespace SimpleSummon.Runtime
             progressIndicator.SetActive(isBusy);
         }
 
-        private static string GetUserMessage(Exception exception)
+        private void SetStatus(string key)
+        {
+            statusKey = key;
+            statusRaw = null;
+            RefreshStatus();
+        }
+
+        private void ClearStatus()
+        {
+            statusKey = null;
+            statusRaw = null;
+            statusText.text = string.Empty;
+        }
+
+        private void RefreshStatus()
+        {
+            statusText.text = !string.IsNullOrEmpty(statusKey)
+                ? GameLocalization.Get(statusKey)
+                : GameLocalization.TranslateRaw(statusRaw ?? string.Empty);
+        }
+
+        private static string GetUserMessageKey(Exception exception)
         {
             string message = exception.Message.ToLowerInvariant();
             if (message.Contains("full"))
             {
-                return "Комната заполнена.";
+                return "error.room_full";
             }
 
             if (message.Contains("locked"))
             {
-                return "Игра уже началась.";
+                return "error.game_started";
             }
 
             if (message.Contains("not found") || message.Contains("code"))
             {
-                return "Комната с таким кодом не найдена.";
+                return "error.room_not_found";
             }
 
-            return "Не удалось подключиться. Проверьте соединение и повторите попытку.";
+            return "error.connection_failed";
         }
     }
 }
