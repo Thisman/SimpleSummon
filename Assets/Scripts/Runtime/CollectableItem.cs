@@ -13,12 +13,30 @@ namespace SimpleSummon.Runtime
         private int signFragmentId;
         [SerializeField] private NetworkQuestState questState;
 
+        [Header("Idle Animation")]
+        [SerializeField, Min(0f)] private float bobAmplitude = 0.15f;
+        [SerializeField, Min(0f)] private float bobFrequency = 1f;
+        [SerializeField] private Vector3 rotationAxes = Vector3.forward;
+        [SerializeField] private float rotationSpeed = 45f;
+
         private Collider trigger;
+        private Vector3 initialLocalPosition;
+        private Quaternion initialLocalRotation;
 
         private void Awake()
         {
             trigger = GetComponent<Collider>();
             trigger.isTrigger = true;
+            initialLocalPosition = transform.localPosition;
+            initialLocalRotation = transform.localRotation;
+        }
+
+        private void Update()
+        {
+            float bobOffset = Mathf.Sin(Time.time * bobFrequency * Mathf.PI * 2f) * bobAmplitude;
+            transform.localPosition = initialLocalPosition + Vector3.up * bobOffset;
+            transform.localRotation = initialLocalRotation *
+                                      Quaternion.Euler(rotationAxes.normalized * rotationSpeed * Time.time);
         }
 
         private void OnEnable()
