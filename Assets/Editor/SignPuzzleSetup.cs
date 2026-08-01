@@ -55,6 +55,7 @@ namespace SimpleSummon.Editor
                                     CreateHint(exitHintPrefab, instructionHint.transform.parent,
                                         "Sign Puzzle Exit Hint", "Нажмите Esc чтобы выйти из сборки знака");
             puzzleHint.SetActive(true);
+            ((RectTransform)puzzleHint.transform).SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 72f);
 
             SignPuzzleView view = signBuilder.GetComponent<SignPuzzleView>() ?? signBuilder.AddComponent<SignPuzzleView>();
             Image[] cells = signBuilder.transform.Cast<Transform>()
@@ -64,6 +65,7 @@ namespace SimpleSummon.Editor
                 .ToArray();
             SerializedObject viewObject = new(view);
             SetArray(viewObject.FindProperty("cells"), cells);
+            viewObject.FindProperty("progressHint").objectReferenceValue = puzzleHint.GetComponent<Text>();
             viewObject.ApplyModifiedPropertiesWithoutUndo();
 
             NetworkObject networkObject = spellbook.GetComponent<NetworkObject>() ?? spellbook.AddComponent<NetworkObject>();

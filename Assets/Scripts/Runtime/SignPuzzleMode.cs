@@ -23,7 +23,7 @@ namespace SimpleSummon.Runtime
         private InputAction down;
         private GameObject container;
         private SignPuzzleView view;
-        private int selectedSlot = -1;
+        private byte selectedFragment = SignPuzzleState.Empty;
 
         private void Awake()
         {
@@ -43,7 +43,14 @@ namespace SimpleSummon.Runtime
             if (puzzle == null) return;
             if (exit.WasPressedThisFrame()) { Exit(true); return; }
             if (click.WasPressedThisFrame() && view.TryGetSlot(point.ReadValue<Vector2>(), out int slot))
-            { selectedSlot = slot; puzzle.RequestMove(slot, SignPuzzleMoveDirection.Automatic); }
+            {
+                byte fragment = puzzle.GetSlot(slot);
+                if (fragment < SignPuzzleState.FragmentCount)
+                {
+                    selectedFragment = fragment;
+                    view.SetSelectedFragment(selectedFragment);
+                }
+            }
             TryKeyboardMove(left, SignPuzzleMoveDirection.Left);
             TryKeyboardMove(right, SignPuzzleMoveDirection.Right);
             TryKeyboardMove(up, SignPuzzleMoveDirection.Up);
@@ -56,7 +63,8 @@ namespace SimpleSummon.Runtime
             LocalPlayerHud hud = LocalPlayerHud.Instance;
             if (hud == null) { target.RequestRelease(); return; }
             puzzle = target; container = hud.SignPuzzleContainer; view = hud.SignPuzzleView;
-            selectedSlot = -1; container.SetActive(true); view.SetPuzzle(puzzle);
+            selectedFragment = FindFirstFragment();
+            container.SetActive(true); view.SetPuzzle(puzzle); view.SetSelectedFragment(selectedFragment);
             playerController.SetLocalInputEnabled(false); playerController.StopHorizontalMovement();
             interactionController.SetLocalInputEnabled(false); lookController.enabled = false;
             map.Enable(); Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
@@ -64,7 +72,7 @@ namespace SimpleSummon.Runtime
 
         private void Exit(bool release)
         {
-            NetworkSignPuzzle previous = puzzle; puzzle = null; selectedSlot = -1; map.Disable();
+            NetworkSignPuzzle previous = puzzle; puzzle = null; selectedFragment = SignPuzzleState.Empty; map.Disable();
             view.SetPuzzle(null); container.SetActive(false);
             lookController.enabled = true; interactionController.SetLocalInputEnabled(true); playerController.SetLocalInputEnabled(true);
             Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false;
@@ -75,14 +83,21 @@ namespace SimpleSummon.Runtime
         {
             if (!action.WasPressedThisFrame()) return;
             puzzle.CopySlots(board);
-            int source = selectedSlot;
-            if (!SignPuzzleState.CanMove(board, source, direction)) source = FindMovableSlot(direction);
-            if (source >= 0) { selectedSlot = source; puzzle.RequestMove(source, direction); }
+            int source = FindSelectedSlot();
+            if (SignPuzzleState.CanMove(board, source, direction)) puzzle.RequestMove(source, direction);
         }
 
-        private int FindMovableSlot(SignPuzzleMoveDirection direction)
+        private byte FindFirstFragment()
         {
-            for (int i = 0; i < board.Length; i++) if (SignPuzzleState.CanMove(board, i, direction)) return i;
+            puzzle.CopySlots(board);
+            for (int i = 0; i < board.Length; i++)
+                if (board[i] < SignPuzzleState.FragmentCount) return board[i];
+            return SignPuzzleState.Empty;
+        }
+
+        private int FindSelectedSlot()
+        {
+            for (int i = 0; i < board.Length; i++) if (board[i] == selectedFragment) return i;
             return -1;
         }
 

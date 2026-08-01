@@ -107,6 +107,11 @@ namespace SimpleSummon.Runtime
             return SelectedCode == EnglishLocaleCode ? entry.En : entry.Ru;
         }
 
+        public static string GetSignPuzzleProgress(int collected, int total) =>
+            SelectedCode == EnglishLocaleCode
+                ? $"Collected {collected} of {total} fragments\nPress Esc to stop assembling the sign"
+                : $"Собрано {collected} из {total} фрагментов\nНажмите Esc чтобы выйти из сборки знака";
+
         public static bool TryGetKey(string value, out string key)
         {
             string normalized = value?.Replace("\r\n", "\n").Trim();

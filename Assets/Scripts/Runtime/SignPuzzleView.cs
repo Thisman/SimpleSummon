@@ -9,10 +9,13 @@ namespace SimpleSummon.Runtime
     public sealed class SignPuzzleView : MonoBehaviour
     {
         [SerializeField] private Image[] cells;
+        [SerializeField] private Text progressHint;
+        [SerializeField] private Color selectedColor = new(1f, 0.85f, 0.35f, 1f);
         private readonly Sprite[] sprites = new Sprite[SignPuzzleState.FragmentCount];
         private NetworkSignPuzzle puzzle;
         private Texture2D[] textures;
         private int activeVariant = -1;
+        private byte selectedFragment = SignPuzzleState.Empty;
 
         private void Awake()
         {
@@ -42,18 +45,28 @@ namespace SimpleSummon.Runtime
             return false;
         }
 
+        public void SetSelectedFragment(byte fragment)
+        {
+            selectedFragment = fragment;
+            Refresh();
+        }
+
         private void Refresh()
         {
             if (puzzle == null || cells.Length != SignPuzzleState.SlotCount) return;
             EnsureVariant(puzzle.SignVariant);
+            int fragmentCount = 0;
             for (int i = 0; i < cells.Length; i++)
             {
                 byte id = puzzle.GetSlot(i);
                 bool visible = id < SignPuzzleState.FragmentCount;
+                if (visible) fragmentCount++;
                 cells[i].enabled = visible;
-                cells[i].color = Color.white;
+                cells[i].color = id == selectedFragment ? selectedColor : Color.white;
                 cells[i].sprite = visible ? sprites[id] : null;
             }
+            if (progressHint != null)
+                progressHint.text = GameLocalization.GetSignPuzzleProgress(fragmentCount, SignPuzzleState.FragmentCount);
         }
 
         private void EnsureVariant(int variant)

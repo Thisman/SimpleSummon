@@ -16294,7 +16294,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1629140414
+  GlobalObjectIdHash: 3134924334
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -20164,8 +20164,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e15c47ac1af357148afa4cecb711903c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.SignPuzzleView
-  progressHint: {fileID: 1218157937}
-  selectedColor: {r: 1, g: 0.85, b: 0.35, a: 1}
   cells:
   - {fileID: 1462623688}
   - {fileID: 532793119}
@@ -20176,6 +20174,8 @@ MonoBehaviour:
   - {fileID: 2139891620}
   - {fileID: 305114275}
   - {fileID: 294926069}
+  progressHint: {fileID: 1218157937}
+  selectedColor: {r: 1, g: 0.85, b: 0.35, a: 1}
 --- !u!1 &532793117
 GameObject:
   m_ObjectHideFlags: 0
@@ -45812,7 +45812,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3969438680
+  GlobalObjectIdHash: 1502499593
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -46970,7 +46970,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1865335867036304499, guid: b42765c91d3f9da409e778d1b19c94e0, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 40
+      value: 72
       objectReference: {fileID: 0}
     - target: {fileID: 1865335867036304499, guid: b42765c91d3f9da409e778d1b19c94e0, type: 3}
       propertyPath: m_LocalPosition.x
@@ -47024,10 +47024,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Sign Puzzle Exit Hint
       objectReference: {fileID: 0}
-    - target: {fileID: 1865335867036304499, guid: b42765c91d3f9da409e778d1b19c94e0, type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 72
-      objectReference: {fileID: 0}
     - target: {fileID: 4343684621576411329, guid: b42765c91d3f9da409e778d1b19c94e0, type: 3}
       propertyPath: m_Text
       value: "\u041D\u0430\u0436\u043C\u0438\u0442\u0435 Esc \u0447\u0442\u043E\u0431\u044B
@@ -47049,6 +47045,12 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4343684621576411329, guid: b42765c91d3f9da409e778d1b19c94e0, type: 3}
   m_PrefabInstance: {fileID: 1218157935}
   m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
 --- !u!1001 &1218302955
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -55184,7 +55186,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 111539610
+  GlobalObjectIdHash: 637810375
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -65956,7 +65958,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3371117845
+  GlobalObjectIdHash: 197772203
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -71812,7 +71814,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1644048337
+  GlobalObjectIdHash: 780889459
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -88397,7 +88399,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3612731720
+  GlobalObjectIdHash: 1700045752
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
