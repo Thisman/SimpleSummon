@@ -1,5 +1,6 @@
 using System;
 using SimpleSummon.Domain;
+using SimpleSummon.Application;
 using Unity.Netcode;
 
 namespace SimpleSummon.Network
@@ -12,8 +13,14 @@ namespace SimpleSummon.Network
         private readonly NetworkVariable<bool> artifactCrafted = new();
         private readonly NetworkVariable<bool> signDrawn = new();
         private readonly QuestProgress progress = new();
+        private QuestProgressService service;
 
         public event Action Changed;
+
+        private void Awake()
+        {
+            service = new QuestProgressService(progress);
+        }
 
         public byte SignFragmentMask => IsSpawned
             ? signFragments.Value
@@ -71,9 +78,7 @@ namespace SimpleSummon.Network
                 return;
             }
 
-            bool changed = type == QuestCollectableType.SignFragment
-                ? progress.CollectSignFragment(id)
-                : progress.CollectBossHeart();
+            bool changed = service.Collect(type, id);
             if (changed)
             {
                 Publish();
@@ -82,7 +87,7 @@ namespace SimpleSummon.Network
 
         public void RecordSignDrawn()
         {
-            if ((!IsSpawned || IsServer) && progress.DrawSign())
+            if ((!IsSpawned || IsServer) && service.RecordSignDrawn())
             {
                 Publish();
             }
@@ -95,7 +100,7 @@ namespace SimpleSummon.Network
                 return false;
             }
 
-            bool changed = progress.CollectArtifactResource();
+            bool changed = service.CollectArtifactResource();
             if (changed)
             {
                 Publish();
@@ -111,7 +116,7 @@ namespace SimpleSummon.Network
                 return false;
             }
 
-            bool changed = progress.CraftArtifact();
+            bool changed = service.CraftArtifact();
             if (changed)
             {
                 Publish();

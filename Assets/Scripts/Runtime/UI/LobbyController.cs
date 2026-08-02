@@ -20,7 +20,6 @@ namespace SimpleSummon.Runtime
         private readonly List<LobbyPlayerEntryView> entries = new();
         private NetworkSessionService sessionService;
         private string statusKey;
-        private string statusRaw;
 
         private void Awake()
         {
@@ -106,32 +105,31 @@ namespace SimpleSummon.Runtime
             }
         }
 
-        private void HandleSessionClosed(string message)
+        private void HandleSessionClosed(SessionCloseReason reason)
         {
-            statusKey = null;
-            statusRaw = message;
+            statusKey = reason == SessionCloseReason.HostClosed
+                ? "session.host_closed"
+                : "session.host_lost";
             RefreshStatus();
         }
 
         private void SetStatus(string key)
         {
             statusKey = key;
-            statusRaw = null;
             RefreshStatus();
         }
 
         private void ClearStatus()
         {
             statusKey = null;
-            statusRaw = null;
             statusText.text = string.Empty;
         }
 
         private void RefreshStatus()
         {
-            statusText.text = !string.IsNullOrEmpty(statusKey)
-                ? GameLocalization.Get(statusKey)
-                : GameLocalization.TranslateRaw(statusRaw ?? string.Empty);
+            statusText.text = string.IsNullOrEmpty(statusKey)
+                ? string.Empty
+                : GameLocalization.Get(statusKey);
         }
     }
 }

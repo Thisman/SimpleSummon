@@ -454,6 +454,21 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: fb7a17d9a2742854f80584d29a154056, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1673635013410140734}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: fb7a17d9a2742854f80584d29a154056, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6000000000000000010}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: fb7a17d9a2742854f80584d29a154056, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6000000000000000011}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: fb7a17d9a2742854f80584d29a154056, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6000000000000000012}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: fb7a17d9a2742854f80584d29a154056, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6000000000000000013}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: fb7a17d9a2742854f80584d29a154056, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6000000000000000014}
   m_SourcePrefab: {fileID: 100100000, guid: fb7a17d9a2742854f80584d29a154056, type: 3}
 --- !u!137 &519980712143948934 stripped
 SkinnedMeshRenderer:
@@ -732,6 +747,71 @@ MonoBehaviour:
       Synchronize: 1
       ParameterType: 9
   AnimatorParametersExpanded: 0
+--- !u!114 &6000000000000000010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1481381398202910610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4cd8872d39d24aa4b931b4b900b135f3, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SimpleSummon.Network::SimpleSummon.Network.NetworkPlayerInput
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &6000000000000000011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1481381398202910610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ac65b31de11610428a0d582b8795e4d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SimpleSummon.Network::SimpleSummon.Network.NetworkPlayerVitals
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &6000000000000000012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1481381398202910610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6ca4d3ed75052343adda0bb375e6625, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SimpleSummon.Network::SimpleSummon.Network.NetworkPlayerIdentity
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &6000000000000000013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1481381398202910610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7e6ba1536690fd4cbe5b9f8de78771d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SimpleSummon.Network::SimpleSummon.Network.NetworkPlayerInteraction
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &6000000000000000014
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1481381398202910610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ee8f1126f1a49143aa5c5c9e311bd55, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SimpleSummon.Network::SimpleSummon.Network.NetworkSceneObjectVisibility
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &6000000000000000001
 MonoBehaviour:
   m_ObjectHideFlags: 0

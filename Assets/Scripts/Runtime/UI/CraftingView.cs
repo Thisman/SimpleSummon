@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using SimpleSummon.Domain;
+using SimpleSummon.Application;
 using SimpleSummon.Network;
 using TMPro;
 using UnityEngine;
@@ -143,21 +144,14 @@ namespace SimpleSummon.Runtime
 
         private bool HasCompleteStack()
         {
-            int nonEmptySlotCount = 0;
-            int mergedResourceCount = 0;
-            foreach (CraftingSlotView slot in slots)
+            int[] slotCounts = new int[slots.Count];
+            for (int i = 0; i < slots.Count; i++)
             {
-                if (slot.Count <= 0)
-                {
-                    continue;
-                }
-
-                nonEmptySlotCount++;
-                mergedResourceCount = slot.Count;
+                slotCounts[i] = slots[i].Count;
             }
-
-            return nonEmptySlotCount == 1 &&
-                   mergedResourceCount == QuestProgress.ArtifactResourceRequirement;
+            return ArtifactCraftingService.HasCompleteStack(
+                slotCounts,
+                QuestProgress.ArtifactResourceRequirement);
         }
 
         private void RefreshText()

@@ -16,14 +16,13 @@ namespace SimpleSummon.Runtime
 
         private NetworkSessionService sessionService;
         private string statusKey;
-        private string statusRaw;
 
         private void Awake()
         {
             sessionService = NetworkSessionService.Instance;
             nicknameInput.text = NicknameStorage.Load();
             roomCodeInput.text = NetworkSessionService.NormalizeCode(roomCodeInput.text);
-            statusRaw = sessionService.ConsumeLastMessage();
+            statusKey = GetSessionCloseKey(sessionService.ConsumeLastCloseReason());
             RefreshStatus();
 
             nicknameInput.onValueChanged.AddListener(HandleInputChanged);
@@ -106,23 +105,28 @@ namespace SimpleSummon.Runtime
         private void SetStatus(string key)
         {
             statusKey = key;
-            statusRaw = null;
             RefreshStatus();
         }
 
         private void ClearStatus()
         {
             statusKey = null;
-            statusRaw = null;
             statusText.text = string.Empty;
         }
 
         private void RefreshStatus()
         {
-            statusText.text = !string.IsNullOrEmpty(statusKey)
-                ? GameLocalization.Get(statusKey)
-                : GameLocalization.TranslateRaw(statusRaw ?? string.Empty);
+            statusText.text = string.IsNullOrEmpty(statusKey)
+                ? string.Empty
+                : GameLocalization.Get(statusKey);
         }
+
+        private static string GetSessionCloseKey(SessionCloseReason reason) => reason switch
+        {
+            SessionCloseReason.HostClosed => "session.host_closed",
+            SessionCloseReason.HostLost => "session.host_lost",
+            _ => null
+        };
 
         private static string GetUserMessageKey(Exception exception)
         {

@@ -7,8 +7,6 @@ namespace SimpleSummon.Runtime
 {
     public sealed class PlayerInteractionController : MonoBehaviour
     {
-        private const int RaycastBufferSize = 16;
-
         [SerializeField] private Camera interactionCamera;
         [SerializeField] private InteractionPromptView promptView;
         [SerializeField] private InputActionReference interactAction;
@@ -19,7 +17,7 @@ namespace SimpleSummon.Runtime
         private InteractiveActor currentActor;
         private float holdTime;
         private bool interactionTriggered;
-        private readonly RaycastHit[] raycastHits = new RaycastHit[RaycastBufferSize];
+        private InteractionTargetScanner targetScanner;
         private NetworkPlayer networkPlayer;
         private bool inputEnabled;
         private InputAction interactInput;
@@ -28,6 +26,11 @@ namespace SimpleSummon.Runtime
         {
             networkPlayer = GetComponent<NetworkPlayer>();
             interactInput = interactAction.action.Clone();
+            targetScanner = new InteractionTargetScanner(
+                interactionCamera,
+                transform,
+                interactionDistance,
+                interactionLayers);
         }
 
         private void OnEnable()
@@ -63,7 +66,7 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            InteractiveActor actor = FindActor();
+            InteractiveActor actor = targetScanner.Find();
 
             if (actor != currentActor)
             {
@@ -105,42 +108,6 @@ namespace SimpleSummon.Runtime
                 }
             }
             ClearTarget();
-        }
-
-        private InteractiveActor FindActor()
-        {
-            Ray ray = interactionCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f));
-            float cameraOffset = Vector3.Distance(interactionCamera.transform.position, transform.position);
-            float rayDistance = cameraOffset + interactionDistance;
-            int hitCount = Physics.RaycastNonAlloc(
-                ray,
-                raycastHits,
-                rayDistance,
-                interactionLayers,
-                QueryTriggerInteraction.Ignore);
-
-            InteractiveActor nearestActor = null;
-            float nearestDistance = float.MaxValue;
-
-            for (int i = 0; i < hitCount; i++)
-            {
-                RaycastHit hit = raycastHits[i];
-                InteractiveActor actor = hit.collider.GetComponentInParent<InteractiveActor>();
-                bool isInRange = Vector3.Distance(transform.position, hit.point) <= interactionDistance;
-
-                if (actor == null ||
-                    !actor.CompareTag("Interactive") ||
-                    !isInRange ||
-                    hit.distance >= nearestDistance)
-                {
-                    continue;
-                }
-
-                nearestActor = actor;
-                nearestDistance = hit.distance;
-            }
-
-            return nearestActor;
         }
 
         private void SetTarget(InteractiveActor actor)

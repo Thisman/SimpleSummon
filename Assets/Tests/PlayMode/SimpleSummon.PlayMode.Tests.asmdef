@@ -1,0 +1,14 @@
+{
+  "name": "SimpleSummon.PlayMode.Tests",
+  "rootNamespace": "SimpleSummon.Tests.PlayMode",
+  "references": [
+    "SimpleSummon.Domain",
+    "SimpleSummon.Network",
+    "SimpleSummon.Runtime",
+    "Unity.Netcode.Runtime"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "autoReferenced": false
+}

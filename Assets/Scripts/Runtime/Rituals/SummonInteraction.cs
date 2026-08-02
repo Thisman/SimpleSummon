@@ -1,4 +1,5 @@
 using SimpleSummon.Network;
+using SimpleSummon.Domain;
 using Unity.Netcode;
 using UnityEngine;
 

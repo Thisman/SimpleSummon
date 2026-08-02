@@ -1,26 +1,17 @@
 using System;
 using System.Collections.Generic;
 using SimpleSummon.Application;
+using SimpleSummon.Domain;
 using Unity.Netcode;
 using UnityEngine;
-using NumericsVector2 = System.Numerics.Vector2;
 
 namespace SimpleSummon.Network
 {
-    public enum SummonRitualState : byte
-    {
-        Available,
-        Claimed,
-        Finished
-    }
-
     [RequireComponent(typeof(NetworkObject))]
     public sealed class NetworkSummonRitual : NetworkBehaviour
     {
         private const ulong NoOwner = ulong.MaxValue;
-        private const int MaximumBatchSize = 32;
-        private const float MinimumPointDistance = 0.001f;
-        private const float MinimumBatchInterval = 1f / 30f;
+        private const ulong OfflineActorId = 0;
 
         [SerializeField] private NetworkQuestState questState;
 
@@ -28,18 +19,26 @@ namespace SimpleSummon.Network
             new(SummonRitualState.Available);
         private readonly NetworkVariable<ulong> drawingClientId = new(NoOwner);
         private readonly NetworkList<NetworkSummonPoint> points = new();
-        private readonly List<NetworkSummonPoint> offlinePoints = new();
-        private SummonRitualState offlineState;
-        private ulong offlineDrawingClientId = NoOwner;
-        private float nextBatchTime;
+        private readonly NetworkRateLimiter submitLimiter = new(30d);
+        private readonly NetworkRateLimiter eraseLimiter = new(30d);
+        private readonly SummonRitualModel model = new();
+        private SummonRitualService service;
+        private NetworkSummonDrawingState drawingState;
 
         public event Action StateChanged;
         public event Action DrawingChanged;
 
-        public SummonRitualState State => IsSpawned ? state.Value : offlineState;
-        public ulong DrawingClientId =>
-            IsSpawned ? drawingClientId.Value : offlineDrawingClientId;
-        public int PointCount => IsSpawned ? points.Count : offlinePoints.Count;
+        public SummonRitualState State => IsSpawned ? state.Value : model.State;
+        public ulong DrawingClientId => IsSpawned
+            ? drawingClientId.Value
+            : model.OwnerId.HasValue ? (ulong)model.OwnerId.Value : NoOwner;
+        public int PointCount => drawingState.Count(IsSpawned);
+
+        private void Awake()
+        {
+            service = new SummonRitualService(model);
+            drawingState = new NetworkSummonDrawingState(model, points);
+        }
 
         public override void OnNetworkSpawn()
         {
@@ -50,6 +49,7 @@ namespace SimpleSummon.Network
             if (IsServer)
             {
                 NetworkManager.OnClientDisconnectCallback += HandleClientDisconnected;
+                PublishState();
             }
 
             StateChanged?.Invoke();
@@ -68,23 +68,16 @@ namespace SimpleSummon.Network
             }
         }
 
-        public NetworkSummonPoint GetPoint(int index)
-        {
-            return IsSpawned ? points[index] : offlinePoints[index];
-        }
+        public NetworkSummonPoint GetPoint(int index) => drawingState.Get(IsSpawned, index);
 
         public void RequestClaim()
         {
             if (!IsSpawned)
             {
-                if (offlineState != SummonRitualState.Available)
+                if (service.Claim(OfflineActorId))
                 {
-                    return;
+                    StateChanged?.Invoke();
                 }
-
-                offlineDrawingClientId = 0;
-                offlineState = SummonRitualState.Claimed;
-                StateChanged?.Invoke();
                 return;
             }
 
@@ -107,276 +100,200 @@ namespace SimpleSummon.Network
 
             if (!IsSpawned)
             {
-                AppendValidatedPoints(submittedPoints);
+                if (service.Submit(NetworkSummonPointMapper.ToCommand(
+                        OfflineActorId,
+                        submittedPoints)))
+                {
+                    DrawingChanged?.Invoke();
+                }
                 return;
             }
 
-            SubmitPointsRpc(submittedPoints);
+            if (IsServer)
+            {
+                SubmitOnServer(NetworkManager.LocalClientId, submittedPoints);
+            }
+            else
+            {
+                SubmitPointsRpc(submittedPoints);
+            }
         }
 
         public void Release()
         {
             if (!IsSpawned)
             {
-                if (offlineState == SummonRitualState.Claimed)
+                if (service.Release(OfflineActorId))
                 {
-                    offlineDrawingClientId = NoOwner;
-                    offlineState = SummonRitualState.Available;
                     StateChanged?.Invoke();
                 }
                 return;
             }
 
-            ReleaseRpc();
+            if (IsServer)
+            {
+                ReleaseOnServer(NetworkManager.LocalClientId);
+            }
+            else
+            {
+                ReleaseRpc();
+            }
         }
 
         public void Erase(Vector2 position, float radius)
         {
-            radius = Mathf.Clamp(radius, 0.005f, 0.2f);
             if (!IsSpawned)
             {
-                ErasePoints(offlinePoints, position, radius);
-                DrawingChanged?.Invoke();
+                if (service.Erase(NetworkSummonPointMapper.ToEraseCommand(
+                        OfflineActorId,
+                        position,
+                        radius)))
+                {
+                    DrawingChanged?.Invoke();
+                }
                 return;
             }
 
-            EraseRpc(position, radius);
+            if (IsServer)
+            {
+                EraseOnServer(NetworkManager.LocalClientId, position, radius);
+            }
+            else
+            {
+                EraseRpc(position, radius);
+            }
         }
 
         public void Finish()
         {
             if (!IsSpawned)
             {
-                if (offlineState == SummonRitualState.Claimed &&
-                    offlinePoints.Count > 0)
+                if (service.Finish(OfflineActorId))
                 {
-                    offlineDrawingClientId = NoOwner;
-                    offlineState = SummonRitualState.Finished;
                     questState.RecordSignDrawn();
                     StateChanged?.Invoke();
                 }
                 return;
             }
 
-            FinishRpc();
+            if (IsServer)
+            {
+                FinishOnServer(NetworkManager.LocalClientId);
+            }
+            else
+            {
+                FinishRpc();
+            }
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void ClaimRpc(RpcParams rpcParams = default)
-        {
+        private void ClaimRpc(RpcParams rpcParams = default) =>
             ClaimOnServer(rpcParams.Receive.SenderClientId);
-        }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         private void SubmitPointsRpc(
             NetworkSummonPoint[] submittedPoints,
-            RpcParams rpcParams = default)
-        {
-            if (rpcParams.Receive.SenderClientId != drawingClientId.Value ||
-                state.Value != SummonRitualState.Claimed ||
-                Time.unscaledTime < nextBatchTime)
-            {
-                return;
-            }
-
-            nextBatchTime = Time.unscaledTime + MinimumBatchInterval;
-            AppendValidatedPoints(submittedPoints);
-        }
+            RpcParams rpcParams = default) =>
+            SubmitOnServer(rpcParams.Receive.SenderClientId, submittedPoints);
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void ReleaseRpc(RpcParams rpcParams = default)
-        {
+        private void ReleaseRpc(RpcParams rpcParams = default) =>
             ReleaseOnServer(rpcParams.Receive.SenderClientId);
-        }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         private void EraseRpc(
             Vector2 position,
             float radius,
-            RpcParams rpcParams = default)
-        {
-            if (rpcParams.Receive.SenderClientId != drawingClientId.Value ||
-                state.Value != SummonRitualState.Claimed ||
-                Time.unscaledTime < nextBatchTime)
-            {
-                return;
-            }
-
-            nextBatchTime = Time.unscaledTime + MinimumBatchInterval;
-            EraseNetworkPoints(position, Mathf.Clamp(radius, 0.005f, 0.2f));
-        }
+            RpcParams rpcParams = default) =>
+            EraseOnServer(rpcParams.Receive.SenderClientId, position, radius);
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void FinishRpc(RpcParams rpcParams = default)
-        {
+        private void FinishRpc(RpcParams rpcParams = default) =>
             FinishOnServer(rpcParams.Receive.SenderClientId);
-        }
 
         private void ClaimOnServer(ulong clientId)
         {
-            if (state.Value != SummonRitualState.Available)
+            if (service.Claim(clientId))
+            {
+                PublishState();
+            }
+        }
+
+        private void SubmitOnServer(
+            ulong clientId,
+            NetworkSummonPoint[] submittedPoints)
+        {
+            NetworkRequestContext request = new(clientId, Time.unscaledTimeAsDouble);
+            if (!submitLimiter.TryAcquire(request))
             {
                 return;
             }
 
-            drawingClientId.Value = clientId;
-            state.Value = SummonRitualState.Claimed;
-        }
-
-        private void AppendValidatedPoints(NetworkSummonPoint[] submittedPoints)
-        {
-            int count = Mathf.Min(submittedPoints.Length, MaximumBatchSize);
-
-            for (int i = 0; i < count; i++)
-            {
-                NetworkSummonPoint point = submittedPoints[i];
-                NumericsVector2? previousPosition =
-                    TryGetLastPoint(out NetworkSummonPoint previousPoint)
-                        ? new NumericsVector2(
-                            previousPoint.Position.x,
-                            previousPoint.Position.y)
-                        : null;
-                if (!SummonPointValidationService.TryValidate(
-                        previousPosition,
-                        new NumericsVector2(point.Position.x, point.Position.y),
-                        point.StartsStroke,
-                        MinimumPointDistance,
-                        out NumericsVector2 validatedPosition))
-                {
-                    continue;
-                }
-
-                point.Position = new Vector2(
-                    validatedPosition.X,
-                    validatedPosition.Y);
-                if (IsSpawned)
-                {
-                    points.Add(point);
-                }
-                else
-                {
-                    offlinePoints.Add(point);
-                }
-            }
-
-            if (!IsSpawned)
-            {
-                DrawingChanged?.Invoke();
-            }
-        }
-
-        private bool TryGetLastPoint(out NetworkSummonPoint point)
-        {
-            int count = IsSpawned ? points.Count : offlinePoints.Count;
-            if (count == 0)
-            {
-                point = default;
-                return false;
-            }
-
-            point = IsSpawned ? points[count - 1] : offlinePoints[count - 1];
-            return true;
-        }
-
-        private static void ErasePoints(
-            IList<NetworkSummonPoint> targetPoints,
-            Vector2 position,
-            float radius)
-        {
-            float squareRadius = radius * radius;
-            bool removedPrevious = false;
-            for (int i = targetPoints.Count - 1; i >= 0; i--)
-            {
-                if ((targetPoints[i].Position - position).sqrMagnitude <= squareRadius)
-                {
-                    targetPoints.RemoveAt(i);
-                    removedPrevious = true;
-                }
-                else if (removedPrevious)
-                {
-                    if (i + 1 < targetPoints.Count)
-                    {
-                        NetworkSummonPoint next = targetPoints[i + 1];
-                        next.StartsStroke = true;
-                        targetPoints[i + 1] = next;
-                    }
-                    removedPrevious = false;
-                }
-            }
-
-            if (targetPoints.Count > 0 && removedPrevious)
-            {
-                NetworkSummonPoint first = targetPoints[0];
-                first.StartsStroke = true;
-                targetPoints[0] = first;
-            }
-        }
-
-        private void EraseNetworkPoints(Vector2 position, float radius)
-        {
-            List<NetworkSummonPoint> remainingPoints = new(points.Count);
-            for (int i = 0; i < points.Count; i++)
-            {
-                remainingPoints.Add(points[i]);
-            }
-
-            ErasePoints(remainingPoints, position, radius);
-            if (remainingPoints.Count == points.Count)
+            int previousCount = model.Points.Count;
+            if (!service.Submit(NetworkSummonPointMapper.ToCommand(
+                    clientId,
+                    submittedPoints)))
             {
                 return;
             }
 
-            points.Clear();
-            foreach (NetworkSummonPoint point in remainingPoints)
+            drawingState.PublishAppended(previousCount);
+        }
+
+        private void EraseOnServer(ulong clientId, Vector2 position, float radius)
+        {
+            NetworkRequestContext request = new(clientId, Time.unscaledTimeAsDouble);
+            if (!eraseLimiter.TryAcquire(request) ||
+                !service.Erase(NetworkSummonPointMapper.ToEraseCommand(
+                    clientId,
+                    position,
+                    radius)))
             {
-                points.Add(point);
+                return;
             }
+
+            drawingState.PublishAll();
         }
 
         private void ReleaseOnServer(ulong clientId)
         {
-            if (state.Value != SummonRitualState.Claimed ||
-                drawingClientId.Value != clientId)
+            if (service.Release(clientId))
             {
-                return;
+                PublishState();
             }
-
-            drawingClientId.Value = NoOwner;
-            state.Value = SummonRitualState.Available;
         }
 
         private void FinishOnServer(ulong clientId)
         {
-            if (state.Value != SummonRitualState.Claimed ||
-                drawingClientId.Value != clientId ||
-                points.Count == 0)
+            if (!service.Finish(clientId))
             {
                 return;
             }
 
-            drawingClientId.Value = NoOwner;
-            state.Value = SummonRitualState.Finished;
+            PublishState();
             questState.RecordSignDrawn();
+        }
+
+        private void PublishState()
+        {
+            state.Value = model.State;
+            drawingClientId.Value = model.OwnerId.HasValue
+                ? (ulong)model.OwnerId.Value
+                : NoOwner;
         }
 
         private void HandleClientDisconnected(ulong clientId)
         {
+            submitLimiter.Forget(clientId);
+            eraseLimiter.Forget(clientId);
             ReleaseOnServer(clientId);
         }
 
-        private void HandleStateChanged(SummonRitualState _, SummonRitualState __)
-        {
+        private void HandleStateChanged(SummonRitualState _, SummonRitualState __) =>
             StateChanged?.Invoke();
-        }
 
-        private void HandleOwnerChanged(ulong _, ulong __)
-        {
-            StateChanged?.Invoke();
-        }
-
-        private void HandlePointsChanged(NetworkListEvent<NetworkSummonPoint> _)
-        {
+        private void HandleOwnerChanged(ulong _, ulong __) => StateChanged?.Invoke();
+        private void HandlePointsChanged(NetworkListEvent<NetworkSummonPoint> _) =>
             DrawingChanged?.Invoke();
-        }
     }
 }

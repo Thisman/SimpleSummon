@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using SimpleSummon.Network;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -8,8 +7,6 @@ namespace SimpleSummon.Runtime
 {
     public sealed class SummonDrawingMode : MonoBehaviour
     {
-        private const int MaximumBatchSize = 32;
-
         [SerializeField] private PlayerController playerController;
         [SerializeField] private PlayerInteractionController interactionController;
         [SerializeField] private OrbitCameraController lookController;
@@ -18,31 +15,21 @@ namespace SimpleSummon.Runtime
         [SerializeField, Min(0.01f)] private float sendInterval = 0.05f;
         [SerializeField, Range(0.005f, 0.2f)] private float eraserRadius = 0.04f;
 
-        private readonly List<NetworkSummonPoint> pendingPoints = new();
         private NetworkSummonRitual ritual;
-        private InputActionMap drawingMap;
-        private InputAction pointAction;
-        private InputAction drawAction;
-        private InputAction eraseAction;
-        private InputAction exitAction;
+        private SummonDrawingInput drawingInput;
+        private SummonStrokeBuffer strokeBuffer;
+        private SummonCanvasCoordinates canvasCoordinates;
         private GameObject summonContainer;
         private RectTransform signContainer;
         private SummonSignGraphic signGraphic;
         private Button summonButton;
-        private Vector2 previousPoint;
         private float sendTime;
         private bool drawing;
 
         private void Awake()
         {
-            drawingMap = inputActions != null
-                ? inputActions.FindActionMap("Drawing", true).Clone()
-                : CreateDrawingMap();
-            pointAction = drawingMap.FindAction("Point", true);
-            drawAction = drawingMap.FindAction("Draw", true);
-            eraseAction = drawingMap.FindAction("Erase", true);
-            exitAction = drawingMap.FindAction("Exit", true);
-            drawingMap.Disable();
+            drawingInput = new SummonDrawingInput(inputActions);
+            strokeBuffer = new SummonStrokeBuffer(minimumPointDistance);
         }
 
         private void OnDisable()
@@ -55,7 +42,7 @@ namespace SimpleSummon.Runtime
 
         private void OnDestroy()
         {
-            drawingMap?.Dispose();
+            drawingInput.Dispose();
         }
 
         private void Update()
@@ -65,24 +52,24 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            if (exitAction.WasPressedThisFrame())
+            if (drawingInput.ExitStarted)
             {
                 Exit(true);
                 return;
             }
 
             if (summonButton.interactable &&
-                drawAction.WasPressedThisFrame() &&
+                drawingInput.DrawStarted &&
                 IsPointerOverSummonButton())
             {
                 Finish();
                 return;
             }
 
-            bool pressed = drawAction.IsPressed();
+            bool pressed = drawingInput.DrawPressed;
             if (pressed && TryReadPoint(out Vector2 point))
             {
-                if (eraseAction.IsPressed())
+                if (drawingInput.ErasePressed)
                 {
                     drawing = false;
                     FlushPoints();
@@ -100,7 +87,7 @@ namespace SimpleSummon.Runtime
                     drawing = true;
                     AddPoint(point, true);
                 }
-                else if (Vector2.Distance(previousPoint, point) >= minimumPointDistance)
+                else
                 {
                     AddPoint(point, false);
                 }
@@ -111,13 +98,14 @@ namespace SimpleSummon.Runtime
             }
 
             sendTime += Time.unscaledDeltaTime;
-            if (sendTime >= sendInterval || pendingPoints.Count >= MaximumBatchSize)
+            if (sendTime >= sendInterval ||
+                strokeBuffer.Count >= SummonStrokeBuffer.MaximumBatchSize)
             {
                 FlushPoints();
             }
 
             summonButton.interactable =
-                ritual.PointCount + pendingPoints.Count > 1;
+                ritual.PointCount + strokeBuffer.Count > 1;
         }
 
         public void Enter(NetworkSummonRitual targetRitual)
@@ -139,6 +127,7 @@ namespace SimpleSummon.Runtime
             signContainer = hud.SignContainer;
             signGraphic = hud.SummonSignGraphic;
             summonButton = hud.SummonButton;
+            canvasCoordinates = new SummonCanvasCoordinates(signContainer);
 
             signGraphic.SetRitual(ritual);
             summonButton.onClick.AddListener(Finish);
@@ -150,7 +139,7 @@ namespace SimpleSummon.Runtime
             playerController.StopHorizontalMovement();
             interactionController.SetLocalInputEnabled(false);
             lookController.enabled = false;
-            drawingMap.Enable();
+            drawingInput.Enable();
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
@@ -169,19 +158,31 @@ namespace SimpleSummon.Runtime
             ritual = null;
             drawing = false;
 
-            drawingMap.Disable();
-            summonButton.onClick.RemoveListener(Finish);
-            summonContainer.SetActive(false);
+            drawingInput.Disable();
+            if (summonButton != null)
+            {
+                summonButton.onClick.RemoveListener(Finish);
+            }
+            if (summonContainer != null)
+            {
+                summonContainer.SetActive(false);
+            }
             LocalPlayerHud.Instance?.ExitModalMode();
-            signGraphic.SetRitual(null);
+            if (signGraphic != null)
+            {
+                signGraphic.SetRitual(null);
+            }
 
-            lookController.enabled = true;
-            interactionController.SetLocalInputEnabled(true);
-            playerController.SetLocalInputEnabled(true);
+            if (lookController != null)
+            {
+                lookController.enabled = true;
+            }
+            interactionController?.SetLocalInputEnabled(true);
+            playerController?.SetLocalInputEnabled(true);
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
 
-            if (release)
+            if (release && previousRitual != null)
             {
                 previousRitual.Release();
             }
@@ -189,54 +190,23 @@ namespace SimpleSummon.Runtime
 
         private bool TryReadPoint(out Vector2 normalized)
         {
-            Vector2 screenPoint = pointAction.ReadValue<Vector2>();
-            Camera eventCamera = GetEventCamera();
-
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    signContainer,
-                    screenPoint,
-                    eventCamera,
-                    out Vector2 localPoint))
-            {
-                normalized = default;
-                return false;
-            }
-
-            Rect square = SummonSignGraphic.GetSquareRect(signContainer.rect);
-            if (!square.Contains(localPoint))
-            {
-                normalized = default;
-                return false;
-            }
-
-            normalized = new Vector2(
-                Mathf.InverseLerp(square.xMin, square.xMax, localPoint.x),
-                Mathf.InverseLerp(square.yMin, square.yMax, localPoint.y));
-            return true;
+            return canvasCoordinates.TryNormalize(
+                drawingInput.PointerPosition,
+                out normalized);
         }
 
         private bool IsPointerOverSummonButton()
         {
             RectTransform buttonTransform = (RectTransform)summonButton.transform;
-            return RectTransformUtility.RectangleContainsScreenPoint(
+            return canvasCoordinates.Contains(
                 buttonTransform,
-                pointAction.ReadValue<Vector2>(),
-                GetEventCamera());
-        }
-
-        private Camera GetEventCamera()
-        {
-            Canvas canvas = signContainer.GetComponentInParent<Canvas>();
-            return canvas.renderMode == RenderMode.ScreenSpaceOverlay
-                ? null
-                : canvas.worldCamera;
+                drawingInput.PointerPosition);
         }
 
         private void AddPoint(Vector2 point, bool startsStroke)
         {
-            previousPoint = point;
-            pendingPoints.Add(new NetworkSummonPoint(point, startsStroke));
-            if (pendingPoints.Count >= MaximumBatchSize)
+            if (strokeBuffer.TryAdd(point, startsStroke) &&
+                strokeBuffer.Count >= SummonStrokeBuffer.MaximumBatchSize)
             {
                 FlushPoints();
             }
@@ -244,40 +214,13 @@ namespace SimpleSummon.Runtime
 
         private void FlushPoints()
         {
-            if (ritual == null || pendingPoints.Count == 0)
+            if (ritual == null || strokeBuffer.Count == 0)
             {
                 return;
             }
 
-            ritual.SubmitPoints(pendingPoints.ToArray());
-            pendingPoints.Clear();
+            ritual.SubmitPoints(strokeBuffer.Take());
             sendTime = 0f;
-        }
-
-        private static InputActionMap CreateDrawingMap()
-        {
-            InputActionMap map = new InputActionMap("Drawing");
-            InputAction point = map.AddAction(
-                "Point",
-                InputActionType.PassThrough,
-                "<Mouse>/position");
-            point.expectedControlType = "Vector2";
-            InputAction draw = map.AddAction(
-                "Draw",
-                InputActionType.Button,
-                "<Mouse>/leftButton");
-            draw.expectedControlType = "Button";
-            InputAction exit = map.AddAction(
-                "Exit",
-                InputActionType.Button,
-                "<Keyboard>/escape");
-            exit.expectedControlType = "Button";
-            InputAction erase = map.AddAction(
-                "Erase",
-                InputActionType.Button,
-                "<Keyboard>/shift");
-            erase.expectedControlType = "Button";
-            return map;
         }
     }
 }

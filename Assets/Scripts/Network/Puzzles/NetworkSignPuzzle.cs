@@ -1,5 +1,6 @@
 using System;
 using SimpleSummon.Domain;
+using SimpleSummon.Application;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -17,22 +18,24 @@ namespace SimpleSummon.Network
         private readonly NetworkVariable<ulong> controllingClientId = new(NoOwner);
         private readonly NetworkVariable<bool> completed = new();
         private readonly NetworkVariable<byte> signVariant = new();
-        private readonly byte[] offlineSlots = new byte[SignPuzzleState.SlotCount];
+        private readonly SignPuzzleModel offlineModel = new();
         private ulong offlineControllingClientId = NoOwner;
-        private bool offlineCompleted;
         private byte offlineSignVariant;
         private byte pendingFragmentMask;
+        private SignPuzzleService service;
+        private NetworkSignPuzzleBoard boardState;
 
         public event Action StateChanged;
         public event Action BoardChanged;
         public ulong ControllingClientId => IsSpawned ? controllingClientId.Value : offlineControllingClientId;
-        public bool Completed => IsSpawned ? completed.Value : offlineCompleted;
+        public bool Completed => boardState.GetCompleted(IsSpawned);
         public int SignVariant => IsSpawned ? signVariant.Value : offlineSignVariant;
         public bool HasFragments => GetFragmentCount() > 0;
 
         private void Awake()
         {
-            FillWithEmpty(offlineSlots);
+            service = new SignPuzzleService(new UnityRandomSource());
+            boardState = new NetworkSignPuzzleBoard(slots, completed, offlineModel);
             offlineSignVariant = (byte)UnityEngine.Random.Range(0, signVariantCount);
         }
 
@@ -85,23 +88,11 @@ namespace SimpleSummon.Network
             if (NetworkManager != null && IsServer) NetworkManager.OnClientDisconnectCallback -= HandleClientDisconnected;
         }
 
-        public byte GetSlot(int index)
-        {
-            if (index < 0 || index >= SignPuzzleState.SlotCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-
-            return IsSpawned
-                ? index < slots.Count ? slots[index] : SignPuzzleState.Empty
-                : offlineSlots[index];
-        }
+        public byte GetSlot(int index) => boardState.GetSlot(IsSpawned, index);
 
         public void CopySlots(byte[] destination)
         {
-            if (destination == null || destination.Length != SignPuzzleState.SlotCount)
-                throw new ArgumentException("Destination must contain nine slots.", nameof(destination));
-            for (int i = 0; i < destination.Length; i++) destination[i] = GetSlot(i);
+            boardState.Copy(IsSpawned, destination);
         }
 
         public void TryClaim(ulong clientId)
@@ -150,16 +141,16 @@ namespace SimpleSummon.Network
         private void MoveOnServer(ulong clientId, int sourceSlot, SignPuzzleMoveDirection direction)
         {
             if (controllingClientId.Value != clientId) return;
-            byte[] board = ReadBoard();
-            if (SignPuzzleState.TryMove(board, sourceSlot, direction)) PublishBoard(board);
+            byte[] board = boardState.Read(IsSpawned);
+            if (service.Move(board, sourceSlot, direction)) PublishBoard(board);
         }
 
         private void MoveOffline(int sourceSlot, SignPuzzleMoveDirection direction)
         {
-            if (offlineControllingClientId == NoOwner || !SignPuzzleState.TryMove(offlineSlots, sourceSlot, direction)) return;
-            offlineCompleted = SignPuzzleState.IsCompleted(offlineSlots);
-            BoardChanged?.Invoke();
-            StateChanged?.Invoke();
+            if (offlineControllingClientId == NoOwner) return;
+            byte[] board = boardState.Read(IsSpawned);
+            if (!service.Move(board, sourceSlot, direction)) return;
+            PublishBoard(board);
         }
 
         private void ReleaseOnServer(ulong clientId)
@@ -179,35 +170,16 @@ namespace SimpleSummon.Network
             byte requestedMask = pendingFragmentMask;
             pendingFragmentMask = 0;
             if (requestedMask == 0) return;
-            byte[] board = ReadBoard();
-            bool changed = false;
-            for (byte id = 0; id < SignPuzzleState.FragmentCount; id++)
-            {
-                if ((requestedMask & 1 << id) != 0)
-                    changed |= SignPuzzleState.TryAddFragment(board, id, UnityEngine.Random.Range(0, int.MaxValue));
-            }
+            byte[] board = boardState.Read(IsSpawned);
+            bool changed = service.AddFragments(board, requestedMask);
             if (changed) PublishBoard(board);
-        }
-
-        private byte[] ReadBoard()
-        {
-            byte[] board = new byte[SignPuzzleState.SlotCount];
-            CopySlots(board);
-            return board;
         }
 
         private void PublishBoard(byte[] board)
         {
-            bool solved = SignPuzzleState.IsCompleted(board);
-            if (IsSpawned)
+            boardState.Publish(IsSpawned, board);
+            if (!IsSpawned)
             {
-                for (int i = 0; i < board.Length; i++) slots[i] = board[i];
-                completed.Value = solved;
-            }
-            else
-            {
-                Array.Copy(board, offlineSlots, board.Length);
-                offlineCompleted = solved;
                 BoardChanged?.Invoke();
                 StateChanged?.Invoke();
             }
@@ -215,14 +187,7 @@ namespace SimpleSummon.Network
 
         private int GetFragmentCount()
         {
-            int count = 0;
-            for (int i = 0; i < SignPuzzleState.SlotCount; i++) if (GetSlot(i) != SignPuzzleState.Empty) count++;
-            return count;
-        }
-
-        private static void FillWithEmpty(byte[] board)
-        {
-            for (int i = 0; i < board.Length; i++) board[i] = SignPuzzleState.Empty;
+            return boardState.CountFragments(IsSpawned);
         }
 
         private void HandleOwnerChanged(ulong _, ulong __) => StateChanged?.Invoke();

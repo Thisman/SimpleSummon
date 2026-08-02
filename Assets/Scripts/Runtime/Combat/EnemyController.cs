@@ -1,4 +1,5 @@
 using SimpleSummon.Domain;
+using SimpleSummon.Application;
 using SimpleSummon.Network;
 using Unity.Netcode;
 using UnityEngine;
@@ -14,19 +15,6 @@ namespace SimpleSummon.Runtime
     {
         private const float MinimumAttackDirectionDot = 0.70710678f;
 
-        private enum State
-        {
-            Idle,
-            Chase,
-            Attack,
-            Return,
-            Dead
-        }
-
-        private static readonly int MovementSpeedId = Animator.StringToHash("MovementSpeed");
-        private static readonly int AttackId = Animator.StringToHash("Attack");
-        private static readonly int DeathId = Animator.StringToHash("Death");
-
         [SerializeField] private Animator animator;
         [SerializeField] private DamageFlash damageFlash;
         [SerializeField] private Renderer[] visualRenderers;
@@ -37,10 +25,14 @@ namespace SimpleSummon.Runtime
         private NavMeshAgent agent;
         private UnitModel model;
         private Vector3 homePosition;
-        private State state;
-        private PlayerController player;
+        private EnemyBehaviorState state;
         private NetworkEnemyState networkState;
         private bool bossWeakened;
+        private EnemyTargetTracker targetTracker;
+        private EnemyNavigation navigation;
+        private EnemyPresentation presentation;
+        private EnemyBossProgression bossProgression;
+        private EnemyReplicationPresenter replicationPresenter;
 
         public bool IsDead => model.IsDead;
         private float EffectiveAttackRadius => settings.AttackRadius *
@@ -51,50 +43,44 @@ namespace SimpleSummon.Runtime
             settings = GetComponent<EnemySettings>();
             networkState = GetComponent<NetworkEnemyState>();
             agent = GetComponent<NavMeshAgent>();
-            float statMultiplier = settings.IsBoss &&
-                                   (questState == null || !questState.ArtifactCrafted)
-                ? settings.BossStatMultiplier
-                : 1f;
-            bossWeakened = settings.IsBoss && statMultiplier <= 1f;
-            model = new UnitModel(
+            bossProgression = new EnemyBossProgression(settings, questState);
+            float statMultiplier = bossProgression.InitialStatMultiplier;
+            bossWeakened = bossProgression.IsInitiallyWeakened;
+            model = EnemyCombatService.Create(
                 settings.MovementSpeed,
-                0f,
                 settings.AttackDelay,
-                settings.Damage * statMultiplier,
-                settings.MaximumHealth * statMultiplier);
+                settings.Damage,
+                settings.MaximumHealth,
+                statMultiplier);
 
             homePosition = transform.position;
             agent.speed = model.MovementSpeed;
             agent.stoppingDistance = EffectiveAttackRadius;
+            targetTracker = new EnemyTargetTracker(transform, ForgetTarget);
+            navigation = new EnemyNavigation(transform, agent);
+            presentation = new EnemyPresentation(
+                animator,
+                damageFlash,
+                visualRenderers,
+                GetComponent<CapsuleCollider>());
+            replicationPresenter = new EnemyReplicationPresenter(
+                networkState,
+                navigation,
+                presentation);
         }
 
         private void OnEnable()
         {
-            if (networkState != null)
-            {
-                networkState.StateChanged += ApplyReplicatedState;
-                networkState.LootStateChanged += ApplyReplicatedLootState;
-            }
-            if (settings.IsBoss && questState != null)
-            {
-                questState.Changed += ApplyArtifactWeakening;
-                ApplyArtifactWeakening();
-            }
-            TrySelectPlayer();
+            replicationPresenter.Enable(MarkReplicatedDead);
+            bossProgression.Enable(ApplyArtifactWeakening);
+            targetTracker.Refresh();
         }
 
         private void OnDisable()
         {
-            if (networkState != null)
-            {
-                networkState.StateChanged -= ApplyReplicatedState;
-                networkState.LootStateChanged -= ApplyReplicatedLootState;
-            }
-            if (questState != null)
-            {
-                questState.Changed -= ApplyArtifactWeakening;
-            }
-            SetPlayer(null);
+            replicationPresenter.Disable();
+            bossProgression.Disable();
+            targetTracker.Clear();
         }
 
         private void Update()
@@ -106,13 +92,15 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            if (state == State.Dead || !agent.isOnNavMesh)
+            if (state == EnemyBehaviorState.Dead || !navigation.IsReady)
             {
                 return;
             }
 
-            TrySelectPlayer();
+            targetTracker.Refresh();
             model.UpdateAttackCooldown(Time.deltaTime);
+
+            PlayerController player = targetTracker.Current;
 
             float distanceToPlayer = player != null
                 ? Vector3.Distance(transform.position, player.transform.position)
@@ -120,76 +108,44 @@ namespace SimpleSummon.Runtime
             float distanceFromHome = Vector3.Distance(transform.position, homePosition);
 
             bool hasLivingTarget = player != null && !player.IsDead;
-            if (distanceFromHome > settings.ReturnRadius ||
-                !hasLivingTarget && distanceFromHome > agent.stoppingDistance)
-            {
-                BeginReturn();
-            }
-            else if (!hasLivingTarget && state != State.Idle)
-            {
-                state = State.Idle;
-                StopMoving();
-            }
+            state = EnemyDecisionService.Decide(new EnemyDecisionContext(
+                state,
+                hasLivingTarget,
+                distanceToPlayer,
+                distanceFromHome,
+                settings.DetectionRadius,
+                EffectiveAttackRadius,
+                settings.ReturnRadius,
+                navigation.StoppingDistance));
 
             switch (state)
             {
-                case State.Idle:
-                    StopMoving();
-                    if (player != null &&
-                        !player.IsDead &&
-                        distanceToPlayer <= settings.DetectionRadius)
+                case EnemyBehaviorState.Idle:
+                    navigation.Stop();
+                    break;
+
+                case EnemyBehaviorState.Chase:
+                    navigation.MoveTo(player.transform.position);
+                    break;
+
+                case EnemyBehaviorState.Attack:
+                    navigation.Stop();
+                    navigation.Face(player.transform.position);
+                    if (model.TryAttack())
                     {
-                        state = State.Chase;
+                        presentation.PlayAttack();
                     }
                     break;
 
-                case State.Chase:
-                    if (distanceToPlayer <= EffectiveAttackRadius)
-                    {
-                        state = State.Attack;
-                        StopMoving();
-                    }
-                    else
-                    {
-                        MoveTo(player.transform.position);
-                    }
-                    break;
-
-                case State.Attack:
-                    FacePlayer();
-                    if (distanceToPlayer > EffectiveAttackRadius)
-                    {
-                        state = State.Chase;
-                    }
-                    else if (model.TryAttack())
-                    {
-                        animator.SetTrigger(AttackId);
-                    }
-                    break;
-
-                case State.Return:
-                    if (hasLivingTarget &&
-                        distanceFromHome <= settings.ReturnRadius &&
-                        distanceToPlayer <= settings.DetectionRadius)
-                    {
-                        state = State.Chase;
-                    }
-                    else if (distanceFromHome <= agent.stoppingDistance)
-                    {
-                        state = State.Idle;
-                        StopMoving();
-                    }
-                    else
-                    {
-                        MoveTo(homePosition);
-                    }
+                case EnemyBehaviorState.Return:
+                    navigation.MoveTo(homePosition);
                     break;
             }
 
             float normalizedSpeed = model.MovementSpeed > 0f
-                ? agent.velocity.magnitude / model.MovementSpeed
+                ? navigation.Speed / model.MovementSpeed
                 : 0f;
-            animator.SetFloat(MovementSpeedId, normalizedSpeed, 0.1f, Time.deltaTime);
+            presentation.SetMovementSpeed(normalizedSpeed, Time.deltaTime);
         }
 
         public void ApplyAttackDamage()
@@ -201,7 +157,8 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            if (state != State.Attack || player == null || player.IsDead)
+            PlayerController player = targetTracker.Current;
+            if (state != EnemyBehaviorState.Attack || player == null || player.IsDead)
             {
                 return;
             }
@@ -232,19 +189,16 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            model.TakeDamage(damage);
-            damageFlash.Play();
-            if (!model.IsDead)
+            bool died = EnemyCombatService.TakeDamage(model, damage);
+            presentation.PlayDamage();
+            if (!died)
             {
                 return;
             }
 
-            state = State.Dead;
-            agent.isStopped = true;
-            agent.enabled = false;
-            GetComponent<CapsuleCollider>().enabled = false;
-            animator.SetFloat(MovementSpeedId, 0f);
-            animator.SetTrigger(DeathId);
+            state = EnemyBehaviorState.Dead;
+            navigation.Disable();
+            presentation.PlayDeath();
             networkState?.Publish(true);
         }
 
@@ -257,163 +211,39 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            if (settings.IsBoss)
-            {
-                questState?.Collect(QuestCollectableType.BossHeart, 0);
-            }
+            bossProgression.CollectHeart();
 
-            foreach (Renderer visualRenderer in visualRenderers)
-            {
-                if (visualRenderer != null)
-                {
-                    visualRenderer.enabled = false;
-                }
-            }
+            presentation.Hide();
 
             networkState?.PublishDeathCompleted(!settings.IsBoss && loot != null);
             loot?.RefreshVisibility();
         }
 
-        private void ApplyReplicatedState(bool isDead)
-        {
-            if (networkState == null || networkState.IsServer)
-            {
-                return;
-            }
-
-            if (isDead && state != State.Dead)
-            {
-                state = State.Dead;
-                agent.enabled = false;
-                GetComponent<CapsuleCollider>().enabled = false;
-                animator.SetFloat(MovementSpeedId, 0f);
-                animator.SetTrigger(DeathId);
-            }
-
-            if (networkState.Disappeared)
-            {
-                HideVisuals();
-            }
-        }
-
-        private void ApplyReplicatedLootState()
-        {
-            if (networkState != null && networkState.Disappeared)
-            {
-                HideVisuals();
-            }
-        }
+        private void MarkReplicatedDead() => state = EnemyBehaviorState.Dead;
 
         private void ApplyArtifactWeakening()
         {
-            if (!settings.IsBoss || bossWeakened || !questState.ArtifactCrafted || model.IsDead)
+            if (!bossProgression.CanApplyWeakening(model, bossWeakened))
             {
                 return;
             }
 
-            float currentHealth = model.CurrentHealth;
-            model = new UnitModel(
+            model = EnemyCombatService.RemoveStatMultiplier(
+                model,
                 settings.MovementSpeed,
-                0f,
                 settings.AttackDelay,
                 settings.Damage,
                 settings.MaximumHealth);
-            model.SetCurrentHealth(Mathf.Min(currentHealth, model.MaximumHealth));
             bossWeakened = true;
         }
 
-        private void HideVisuals()
+        private void ForgetTarget()
         {
-            foreach (Renderer visualRenderer in visualRenderers)
+            if (state != EnemyBehaviorState.Dead)
             {
-                if (visualRenderer != null)
-                {
-                    visualRenderer.enabled = false;
-                }
+                state = EnemyBehaviorState.Return;
             }
         }
 
-        private void ForgetPlayer()
-        {
-            if (state != State.Dead)
-            {
-                BeginReturn();
-            }
-        }
-
-        private void TrySelectPlayer()
-        {
-            PlayerController closest = PlayerRegistry.GetClosestLiving(transform.position);
-            if (closest != player)
-            {
-                SetPlayer(closest);
-            }
-        }
-
-        private void SetPlayer(PlayerController value)
-        {
-            if (player != null)
-            {
-                player.Respawned -= ForgetPlayer;
-            }
-
-            player = value;
-            if (player != null)
-            {
-                player.Respawned += ForgetPlayer;
-            }
-        }
-
-        private void BeginReturn()
-        {
-            if (state == State.Return || state == State.Dead)
-            {
-                return;
-            }
-
-            state = State.Return;
-            MoveTo(homePosition);
-        }
-
-        private void MoveTo(Vector3 destination)
-        {
-            agent.isStopped = false;
-            agent.SetDestination(destination);
-        }
-
-        private void StopMoving()
-        {
-            agent.isStopped = true;
-            agent.ResetPath();
-        }
-
-        private void FacePlayer()
-        {
-            Vector3 direction = player.transform.position - transform.position;
-            direction.y = 0f;
-            if (direction.sqrMagnitude > 0f)
-            {
-                transform.rotation = Quaternion.LookRotation(direction);
-            }
-        }
-
-        private void OnDrawGizmosSelected()
-        {
-            EnemySettings currentSettings = settings != null ? settings : GetComponent<EnemySettings>();
-            if (currentSettings == null)
-            {
-                return;
-            }
-
-            Vector3 origin = UnityEngine.Application.isPlaying ? homePosition : transform.position;
-
-            Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(origin, currentSettings.DetectionRadius);
-            Gizmos.color = Color.red;
-            float scale = Mathf.Max(transform.lossyScale.x, transform.lossyScale.z);
-            Gizmos.DrawWireSphere(transform.position, currentSettings.AttackRadius * scale);
-            Gizmos.color = Color.cyan;
-            Gizmos.DrawWireSphere(origin, currentSettings.ReturnRadius);
-        }
     }
 }

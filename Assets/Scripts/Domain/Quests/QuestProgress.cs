@@ -2,12 +2,6 @@ using System;
 
 namespace SimpleSummon.Domain
 {
-    public enum QuestCollectableType : byte
-    {
-        SignFragment,
-        BossHeart
-    }
-
     public sealed class QuestProgress
     {
         public const int SignFragmentCount = 8;

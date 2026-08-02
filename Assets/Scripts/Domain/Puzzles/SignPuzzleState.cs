@@ -3,15 +3,6 @@ using System.Collections.Generic;
 
 namespace SimpleSummon.Domain
 {
-    public enum SignPuzzleMoveDirection : byte
-    {
-        Automatic,
-        Left,
-        Right,
-        Up,
-        Down
-    }
-
     public static class SignPuzzleState
     {
         public const int GridSize = 3;
