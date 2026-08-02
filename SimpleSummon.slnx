@@ -49,7 +49,6 @@
   <Project Path="Unity.Services.Multiplayer.Editor.Matchmaker.Authoring.csproj" />
   <Project Path="Unity.TextMeshPro.csproj" />
   <Project Path="Unity.TextMeshPro.Editor.csproj" />
-  <Project Path="SimpleSummon.Network.csproj" />
   <Project Path="Unity.Burst.Editor.csproj" />
   <Project Path="Unity.Rider.Editor.csproj" />
   <Project Path="Unity.VisualScripting.State.csproj" />
@@ -59,15 +58,16 @@
   <Project Path="Unity.RenderPipelines.Universal.2D.Editor.Overrides.csproj" />
   <Project Path="Unity.Networking.Editor.csproj" />
   <Project Path="Unity.Services.Authentication.PlayerAccounts.Editor.csproj" />
+  <Project Path="SimpleSummon.Network.csproj" />
   <Project Path="Unity.Services.Deployment.Editor.Shared.csproj" />
   <Project Path="Unity.AI.Navigation.Editor.csproj" />
   <Project Path="Unity.Netcode.Editor.CodeGen.csproj" />
-  <Project Path="SimpleSummon.Application.csproj" />
   <Project Path="Unity.Services.Multiplayer.Editor.Matchmaker.Authoring.Core.csproj" />
   <Project Path="Unity.Services.Core.Configuration.Editor.csproj" />
   <Project Path="SimpleSummon.Application.Tests.csproj" />
   <Project Path="Unity.Services.Core.Configuration.csproj" />
   <Project Path="Unity.Multiplayer.Center.Common.csproj" />
+  <Project Path="SimpleSummon.Application.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Runtime.Shared.csproj" />
   <Project Path="Unity.Services.Core.Environments.Internal.csproj" />
   <Project Path="Unity.InputSystem.ForUI.csproj" />
@@ -83,7 +83,6 @@
   <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Unity.PathTracing.Editor.csproj" />
   <Project Path="Unity.Services.Core.Threading.csproj" />
-  <Project Path="SimpleSummon.Domain.csproj" />
   <Project Path="Unity.InputSystem.TestFramework.csproj" />
   <Project Path="Unity.Services.Multiplayer.Editor.csproj" />
   <Project Path="Unity.ShaderGraph.Utilities.csproj" />
@@ -92,6 +91,7 @@
   <Project Path="Unity.Services.Core.Analytics.csproj" />
   <Project Path="Unity.SurfaceCache.Runtime.csproj" />
   <Project Path="Unity.InternalAPIEngineBridge.RenderPipelines.Core.Runtime.Shared.csproj" />
+  <Project Path="SimpleSummon.Domain.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="Unity.RenderPipeline.Universal.ShaderLibrary.csproj" />
   <Project Path="SimpleSummon.Editor.csproj" />
