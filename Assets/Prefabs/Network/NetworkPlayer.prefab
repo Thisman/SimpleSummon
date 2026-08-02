@@ -231,7 +231,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SimpleSummon.Runtime.TorchLightFlicker
   torchLight: {fileID: 8463776911388171952}
-  intensityRange: {x: 6.4, y: 7.3}
+  intensityRange: {x: 9.4, y: 10.3}
   transitionDurationRange: {x: 0.1, y: 0.23}
   randomStartDelayRange: {x: 0, y: 0.72}
 --- !u!1 &3719512231643071471
