@@ -25,6 +25,7 @@ namespace SimpleSummon.Runtime
         [SerializeField, Min(0f)] private float rotationSpeed = 720f;
         [SerializeField, Min(0f)] private float damageVignetteDuration = 0.35f;
         [SerializeField, Range(0f, 1f)] private float damageVignetteOpacity = 0.65f;
+        [SerializeField, Min(0f)] private float torchMovementSpeedBonus = 2f;
 
         private NetworkPlayer networkPlayer;
         private UnitModel model;
@@ -167,7 +168,14 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            locomotion.Tick(model, direction, jumpRequested, Time.deltaTime);
+            bool hasTorch = networkPlayer != null && networkPlayer.HasTorch;
+            locomotion.Tick(
+                model,
+                direction,
+                jumpRequested,
+                hasTorch ? torchMovementSpeedBonus : 0f,
+                Time.deltaTime);
+            networkPlayer?.SetTorchMovementActive(locomotion.HorizontalSpeed > 0.01f);
             UpdateAttack(attackRequested);
 
             float normalizedMovementSpeed = model.MovementSpeed > 0f
@@ -178,7 +186,11 @@ namespace SimpleSummon.Runtime
 
         private void UpdateAttack(bool attackRequested)
         {
-            if (UnitAttackService.TryAttack(model, Time.deltaTime, attackRequested))
+            bool attackAllowed = networkPlayer == null || !networkPlayer.HasTorch;
+            if (UnitAttackService.TryAttack(
+                model,
+                Time.deltaTime,
+                attackAllowed && attackRequested))
             {
                 FaceAimedTarget();
                 presentation.PlayAttack();
@@ -200,6 +212,7 @@ namespace SimpleSummon.Runtime
         public void ApplyAttackDamage()
         {
             if (model.IsDead ||
+                networkPlayer != null && networkPlayer.HasTorch ||
                 networkPlayer != null && !networkPlayer.CanRunSimulation)
             {
                 return;
@@ -216,7 +229,12 @@ namespace SimpleSummon.Runtime
 
         public void TakeDamage(float damage)
         {
+            float healthBefore = model.CurrentHealth;
             vitals.TakeDamage(damage);
+            if (model.CurrentHealth < healthBefore)
+            {
+                networkPlayer?.DropTorch();
+            }
         }
 
         private void OnGUI()

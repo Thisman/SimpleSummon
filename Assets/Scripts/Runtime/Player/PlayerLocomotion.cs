@@ -28,10 +28,18 @@ namespace SimpleSummon.Runtime
         public float HorizontalSpeed => horizontalVelocity.magnitude;
         public bool IsGrounded => controller.isGrounded;
 
-        public void Tick(UnitModel model, Vector3 direction, bool jumpRequested, float deltaTime)
+        public void Tick(
+            UnitModel model,
+            Vector3 direction,
+            bool jumpRequested,
+            float movementSpeedBonus,
+            float deltaTime)
         {
             UpdateVerticalVelocity(model.JumpHeight, jumpRequested, deltaTime);
-            UpdateHorizontalVelocity(model.MovementSpeed, direction, deltaTime);
+            UpdateHorizontalVelocity(
+                model.MovementSpeed + movementSpeedBonus,
+                direction,
+                deltaTime);
 
             Vector3 velocity = horizontalVelocity;
             velocity.y = verticalVelocity;

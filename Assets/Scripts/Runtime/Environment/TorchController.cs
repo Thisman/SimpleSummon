@@ -1,50 +1,42 @@
+using SimpleSummon.Network;
 using UnityEngine;
 
 namespace SimpleSummon.Runtime
 {
     public sealed class TorchController : MonoBehaviour
     {
-        [SerializeField] private Light torchLight;
-        [SerializeField] private Vector2 intensityRange = new(0.7f, 1.15f);
-        [SerializeField] private Vector2 transitionDurationRange = new(0.08f, 0.2f);
-        [SerializeField] private Vector2 randomStartDelayRange = new(0f, 1f);
+        [SerializeField] private NetworkTorchState state;
+        [SerializeField] private Collider interactionCollider;
 
-        private float startIntensity;
-        private float targetIntensity;
-        private float transitionDuration;
-        private float transitionElapsed;
-        private float startDelayRemaining;
+        private Renderer[] torchRenderers;
+        private Light[] torchLights;
+
+        private void Awake()
+        {
+            torchRenderers = GetComponentsInChildren<Renderer>(true);
+            torchLights = GetComponentsInChildren<Light>(true);
+        }
 
         private void OnEnable()
         {
-            startIntensity = torchLight.intensity;
-            targetIntensity = Random.Range(intensityRange.x, intensityRange.y);
-            transitionDuration = Random.Range(transitionDurationRange.x, transitionDurationRange.y);
-            transitionElapsed = 0f;
-            startDelayRemaining = Random.Range(randomStartDelayRange.x, randomStartDelayRange.y);
+            state.Changed += Refresh;
+            Refresh();
         }
 
-        private void Update()
+        private void OnDisable() => state.Changed -= Refresh;
+
+        private void Refresh()
         {
-            if (startDelayRemaining > 0f)
+            bool available = state.IsAvailable;
+            foreach (Renderer torchRenderer in torchRenderers)
             {
-                startDelayRemaining -= Time.deltaTime;
-                return;
+                torchRenderer.enabled = available;
             }
-
-            transitionElapsed += Time.deltaTime;
-            float progress = Mathf.Clamp01(transitionElapsed / transitionDuration);
-            torchLight.intensity = Mathf.SmoothStep(startIntensity, targetIntensity, progress);
-
-            if (progress < 1f)
+            foreach (Light torchLight in torchLights)
             {
-                return;
+                torchLight.enabled = available;
             }
-
-            startIntensity = targetIntensity;
-            targetIntensity = Random.Range(intensityRange.x, intensityRange.y);
-            transitionDuration = Random.Range(transitionDurationRange.x, transitionDurationRange.y);
-            transitionElapsed = 0f;
+            interactionCollider.enabled = available;
         }
     }
 }

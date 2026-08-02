@@ -10,6 +10,7 @@ namespace SimpleSummon.Network
     [RequireComponent(typeof(NetworkPlayerIdentity))]
     [RequireComponent(typeof(NetworkPlayerInteraction))]
     [RequireComponent(typeof(NetworkSceneObjectVisibility))]
+    [RequireComponent(typeof(NetworkPlayerTorch))]
     public sealed class NetworkPlayer : NetworkBehaviour
     {
         private NetworkPlayerInput input;
@@ -17,6 +18,8 @@ namespace SimpleSummon.Network
         private NetworkPlayerIdentity identity;
         private NetworkPlayerInteraction interaction;
         private NetworkSceneObjectVisibility visibility;
+        private NetworkPlayerTorch torch;
+        private bool torchMovementActive;
 
         public event Action RoleChanged;
         public event Action<float, bool> VitalStateChanged
@@ -41,12 +44,23 @@ namespace SimpleSummon.Network
         public bool CanReadLocalInput => IsOffline || IsSpawned && IsOwner;
         public bool CanRunSimulation => IsOffline || IsSpawned && IsServer;
         public string Nickname => Identity.Nickname;
+        public bool HasTorch => Torch.IsHeld;
+        public float TorchStrength => Torch.Strength;
+        public bool TorchMovementActive => torchMovementActive;
+        public event Action TorchChanged
+        {
+            add => Torch.Changed += value;
+            remove => Torch.Changed -= value;
+        }
 
         private NetworkPlayerVitals Vitals =>
             vitals != null ? vitals : vitals = GetComponent<NetworkPlayerVitals>();
 
         private NetworkPlayerIdentity Identity =>
             identity != null ? identity : identity = GetComponent<NetworkPlayerIdentity>();
+
+        private NetworkPlayerTorch Torch =>
+            torch != null ? torch : torch = GetComponent<NetworkPlayerTorch>();
 
         private bool IsOffline =>
             NetworkManager.Singleton == null ||
@@ -59,6 +73,7 @@ namespace SimpleSummon.Network
             identity = GetComponent<NetworkPlayerIdentity>();
             interaction = GetComponent<NetworkPlayerInteraction>();
             visibility = GetComponent<NetworkSceneObjectVisibility>();
+            torch = GetComponent<NetworkPlayerTorch>();
         }
 
         public override void OnNetworkSpawn()
@@ -102,5 +117,18 @@ namespace SimpleSummon.Network
             interaction.Request(target, maximumDistance);
 
         public void HideSceneObject(NetworkObject target) => visibility.Hide(target);
+
+        public void SetTorchMovementActive(bool value)
+        {
+            if (CanRunSimulation)
+            {
+                torchMovementActive = value;
+            }
+        }
+
+        public void PublishTorch(bool held, float strength) =>
+            Torch.Publish(held, strength);
+
+        public void DropTorch() => NetworkTorchState.Active?.Drop(this);
     }
 }

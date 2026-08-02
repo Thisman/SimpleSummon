@@ -139,7 +139,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 63d873f0995f47d98514d7ee1c968559, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SimpleSummon.Runtime.TorchController
+  m_EditorClassIdentifier: Assembly-CSharp::SimpleSummon.Runtime.TorchLightFlicker
   torchLight: {fileID: 2286474289166988438}
   intensityRange: {x: 6.4, y: 7.3}
   transitionDurationRange: {x: 0.1, y: 0.23}

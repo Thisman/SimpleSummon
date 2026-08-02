@@ -24,7 +24,9 @@ namespace SimpleSummon.Runtime
             ["Зажмите E, чтобы начать призыв"] = "interaction.start_summon",
             ["Нажмите Е, чтобы подняться из подземелья"] = "interaction.return_lab",
             ["Нажмите Е, чтобы спуститься в подземелье"] = "interaction.enter_dungeon",
-            ["Нажмите E, чтобы спуститься в подземелье"] = "interaction.enter_dungeon"
+            ["Нажмите E, чтобы спуститься в подземелье"] = "interaction.enter_dungeon",
+            ["Нажмите Е чтобы взять факел"] = "interaction.take_torch",
+            ["Нажмите E чтобы взять факел"] = "interaction.take_torch"
         };
 
         private static readonly Dictionary<string, (string Ru, string En)> Entries = new()
@@ -50,6 +52,7 @@ namespace SimpleSummon.Runtime
             ["interaction.start_summon"] = ("Зажмите E, чтобы начать призыв", "Hold E to begin the summoning"),
             ["interaction.return_lab"] = ("Нажмите Е, чтобы подняться из подземелья", "Press E to return to the laboratory"),
             ["interaction.enter_dungeon"] = ("Нажмите Е, чтобы спуститься в подземелье", "Press E to enter the dungeon"),
+            ["interaction.take_torch"] = ("Нажмите Е чтобы взять факел", "Press E to take the torch"),
             ["error.room_full"] = ("Комната заполнена.", "The room is full."),
             ["error.game_started"] = ("Игра уже началась.", "The game has already started."),
             ["error.room_not_found"] = ("Комната с таким кодом не найдена.", "No room was found with that code."),

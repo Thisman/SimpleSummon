@@ -101,7 +101,7 @@ namespace SimpleSummon.Runtime
             }
             else
             {
-                NetworkObject target = currentActor.GetComponentInParent<NetworkObject>();
+                NetworkObject target = currentActor.NetworkTarget;
                 if (target != null)
                 {
                     networkPlayer.RequestInteraction(target, interactionDistance);
