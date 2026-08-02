@@ -1964,6 +1964,9 @@ GameObject:
   - component: {fileID: 1835050345}
   - component: {fileID: 1835050344}
   - component: {fileID: 1835050343}
+  - component: {fileID: 1835050346}
+  - component: {fileID: 1835050347}
+  - component: {fileID: 1835050348}
   m_Layer: 0
   m_Name: MenuContainer
   m_TagString: Untagged
@@ -2010,13 +2013,55 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 626c96aaa44ccc843bf1d3f6b4ad0b1b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.MainMenuController
+  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.MainMenuView
   nicknameInput: {fileID: 504032440}
   roomCodeInput: {fileID: 2071743886}
   createRoomButton: {fileID: 656623664}
   joinRoomButton: {fileID: 1223827214}
   statusText: {fileID: 6247558}
   progressIndicator: {fileID: 1903927044}
+--- !u!114 &1835050346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1835050341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a1387ff1f1d498c89b91ce9d2f0496b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.MainMenuController
+  view: {fileID: 1835050343}
+--- !u!114 &1835050347
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1835050341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2110ece6d53ee34088e669a7935b361, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.LanguageButtonsView
+  russianButton: {fileID: 37256839}
+  englishButton: {fileID: 1634156443}
+  activeColor: {r: 1, g: 1, b: 1, a: 1}
+  inactiveColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+--- !u!114 &1835050348
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1835050341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bb55340266f4966a57bd2ffaa134d0b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.LanguageButtonsController
+  view: {fileID: 1835050347}
 --- !u!114 &1835050344
 MonoBehaviour:
   m_ObjectHideFlags: 0

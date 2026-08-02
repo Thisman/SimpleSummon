@@ -142,15 +142,16 @@ namespace SimpleSummon.Editor
             GameObject root = PrefabUtility.LoadPrefabContents(PlayerPrefabPath);
             try
             {
-                PlayerNameplate existing =
-                    root.GetComponentInChildren<PlayerNameplate>(true);
+                PlayerNameplateView existing =
+                    root.GetComponentInChildren<PlayerNameplateView>(true);
                 if (existing == null)
                 {
                     GameObject nameplate = new(
                         "Player Nameplate",
                         typeof(RectTransform),
                         typeof(Canvas),
-                        typeof(PlayerNameplate));
+                        typeof(PlayerNameplateView),
+                        typeof(PlayerNameplateController));
                     RectTransform rect = nameplate.GetComponent<RectTransform>();
                     rect.SetParent(root.transform, false);
                     rect.localPosition = new Vector3(0f, 2.65f, 0f);
@@ -177,11 +178,14 @@ namespace SimpleSummon.Editor
                     text.raycastTarget = false;
                     text.text = "Player";
 
-                    PlayerNameplate nameplateComponent =
-                        nameplate.GetComponent<PlayerNameplate>();
-                    SetReference(nameplateComponent, "networkPlayer",
+                    PlayerNameplateView nameplateView =
+                        nameplate.GetComponent<PlayerNameplateView>();
+                    PlayerNameplateController nameplateController =
+                        nameplate.GetComponent<PlayerNameplateController>();
+                    SetReference(nameplateView, "nicknameText", text);
+                    SetReference(nameplateController, "networkPlayer",
                         root.GetComponent<NetworkPlayer>());
-                    SetReference(nameplateComponent, "nicknameText", text);
+                    SetReference(nameplateController, "view", nameplateView);
                 }
                 else
                 {

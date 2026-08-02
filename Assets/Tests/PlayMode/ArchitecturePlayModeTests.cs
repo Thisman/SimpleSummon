@@ -19,20 +19,20 @@ namespace SimpleSummon.Tests.PlayMode
                 yield return null;
             }
 
-            NetworkSummonRitual ritual =
-                Object.FindAnyObjectByType<NetworkSummonRitual>();
+            NetworkSignDrawing ritual =
+                Object.FindAnyObjectByType<NetworkSignDrawing>();
             Assert.That(ritual, Is.Not.Null);
 
             ritual.RequestClaim();
-            Assert.That(ritual.State, Is.EqualTo(SummonRitualState.Claimed));
+            Assert.That(ritual.State, Is.EqualTo(SignDrawingState.Claimed));
             ritual.SubmitPoints(new[]
             {
-                new NetworkSummonPoint(new Vector2(0.1f, 0.1f), true),
-                new NetworkSummonPoint(new Vector2(0.8f, 0.8f), false)
+                new NetworkSignPoint(new Vector2(0.1f, 0.1f), true),
+                new NetworkSignPoint(new Vector2(0.8f, 0.8f), false)
             });
             ritual.Finish();
 
-            Assert.That(ritual.State, Is.EqualTo(SummonRitualState.Finished));
+            Assert.That(ritual.State, Is.EqualTo(SignDrawingState.Finished));
             Assert.That(ritual.PointCount, Is.EqualTo(2));
         }
     }

@@ -143,7 +143,7 @@ namespace SimpleSummon.Editor
                 }
             }
 
-            ConfigureLocalPlayerHud();
+            ConfigureLocalPlayerHudView();
 
             Transform[] existingSpawnRoots = Object.FindObjectsByType<Transform>(
                 FindObjectsInactive.Include);
@@ -185,7 +185,7 @@ namespace SimpleSummon.Editor
             return playerPrefab;
         }
 
-        private static void ConfigureLocalPlayerHud()
+        private static void ConfigureLocalPlayerHudView()
         {
             InteractionPromptView prompt = Object.FindAnyObjectByType<InteractionPromptView>(
                 FindObjectsInactive.Include);
@@ -194,16 +194,20 @@ namespace SimpleSummon.Editor
                 throw new InvalidOperationException("Game scene player HUD was not found.");
             }
 
-            LocalPlayerHud hud = prompt.GetComponent<LocalPlayerHud>();
+            LocalPlayerHudView hud = prompt.GetComponentInParent<LocalPlayerHudView>();
             if (hud == null)
             {
-                hud = prompt.gameObject.AddComponent<LocalPlayerHud>();
+                hud = prompt.transform.root.gameObject.AddComponent<LocalPlayerHudView>();
             }
+            LocalPlayerHudController hudController =
+                hud.GetComponent<LocalPlayerHudController>() ??
+                hud.gameObject.AddComponent<LocalPlayerHudController>();
 
             Transform exitHint = Object.FindObjectsByType<Transform>(
                     FindObjectsInactive.Include)
                 .FirstOrDefault(item => item.name == "Instruction Exit Hint");
             SetSerializedField(hud, "interactionPrompt", prompt);
+            SetSerializedField(hudController, "view", hud);
             SetSerializedField(
                 hud,
                 "instructionExitHint",
@@ -279,13 +283,29 @@ namespace SimpleSummon.Editor
             Text status = CreateText(panel, string.Empty, 18, new Vector2(0f, -220f), new Vector2(700f, 80f));
             Text progress = CreateText(panel, "Подключение…", 18, new Vector2(0f, -280f), new Vector2(400f, 40f));
 
+            Button russian = CreateButton(
+                panel, "Ru", new Vector2(-100f, 220f), new Vector2(160f, 50f));
+            russian.gameObject.name = "RuButton";
+            Button english = CreateButton(
+                panel, "Eng", new Vector2(100f, 220f), new Vector2(160f, 50f));
+            english.gameObject.name = "EngButton";
+
+            MainMenuView view = panel.gameObject.AddComponent<MainMenuView>();
             MainMenuController controller = panel.gameObject.AddComponent<MainMenuController>();
-            SetSerializedField(controller, "nicknameInput", nickname);
-            SetSerializedField(controller, "roomCodeInput", code);
-            SetSerializedField(controller, "createRoomButton", create);
-            SetSerializedField(controller, "joinRoomButton", join);
-            SetSerializedField(controller, "statusText", status);
-            SetSerializedField(controller, "progressIndicator", progress.gameObject);
+            SetSerializedField(view, "nicknameInput", nickname);
+            SetSerializedField(view, "roomCodeInput", code);
+            SetSerializedField(view, "createRoomButton", create);
+            SetSerializedField(view, "joinRoomButton", join);
+            SetSerializedField(view, "statusText", status);
+            SetSerializedField(view, "progressIndicator", progress.gameObject);
+            SetSerializedField(controller, "view", view);
+            LanguageButtonsView languageView =
+                panel.gameObject.AddComponent<LanguageButtonsView>();
+            LanguageButtonsController languageController =
+                panel.gameObject.AddComponent<LanguageButtonsController>();
+            SetSerializedField(languageView, "russianButton", russian);
+            SetSerializedField(languageView, "englishButton", english);
+            SetSerializedField(languageController, "view", languageView);
 
             EditorSceneManager.SaveScene(scene, MenuScenePath);
         }
@@ -322,15 +342,17 @@ namespace SimpleSummon.Editor
             Button leave = CreateButton(panel, "Выйти", new Vector2(150f, -230f), new Vector2(260f, 58f));
             Text status = CreateText(panel, string.Empty, 18, new Vector2(0f, -300f), new Vector2(700f, 55f));
 
+            LobbyView view = panel.gameObject.AddComponent<LobbyView>();
             LobbyController controller = panel.gameObject.AddComponent<LobbyController>();
-            SetSerializedField(controller, "roomCodeText", code);
-            SetSerializedField(controller, "playerCountText", count);
-            SetSerializedField(controller, "statusText", status);
-            SetSerializedField(controller, "playerListRoot", listRoot);
-            SetSerializedField(controller, "playerEntryPrefab", entryPrefab);
-            SetSerializedField(controller, "copyCodeButton", copy);
-            SetSerializedField(controller, "startGameButton", start);
-            SetSerializedField(controller, "leaveButton", leave);
+            SetSerializedField(view, "roomCodeText", code);
+            SetSerializedField(view, "playerCountText", count);
+            SetSerializedField(view, "statusText", status);
+            SetSerializedField(view, "playerListRoot", listRoot);
+            SetSerializedField(view, "playerEntryPrefab", entryPrefab);
+            SetSerializedField(view, "copyCodeButton", copy);
+            SetSerializedField(view, "startGameButton", start);
+            SetSerializedField(view, "leaveButton", leave);
+            SetSerializedField(controller, "view", view);
 
             EditorSceneManager.SaveScene(scene, LobbyScenePath);
         }

@@ -1026,6 +1026,7 @@ GameObject:
   - component: {fileID: 1627971652}
   - component: {fileID: 1627971651}
   - component: {fileID: 1627971650}
+  - component: {fileID: 1627971653}
   m_Layer: 0
   m_Name: Panel
   m_TagString: Untagged
@@ -1071,7 +1072,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 26c0fae1bb7c1754a96176d41f1f723e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.LobbyController
+  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.LobbyView
   roomCodeText: {fileID: 1099118425}
   playerCountText: {fileID: 1750950189}
   statusText: {fileID: 1804475287}
@@ -1080,6 +1081,19 @@ MonoBehaviour:
   copyCodeButton: {fileID: 1022766911}
   startGameButton: {fileID: 607221724}
   leaveButton: {fileID: 1525344553}
+--- !u!114 &1627971653
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1627971648}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82e6a010deaa4b85b8bdb3354af775e2, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.LobbyController
+  view: {fileID: 1627971650}
 --- !u!114 &1627971651
 MonoBehaviour:
   m_ObjectHideFlags: 0

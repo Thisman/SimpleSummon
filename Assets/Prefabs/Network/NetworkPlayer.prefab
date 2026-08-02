@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4042761113213582839}
   - component: {fileID: 5515868131254407837}
   - component: {fileID: 2381114350594318129}
+  - component: {fileID: 2381114350594318130}
   m_Layer: 0
   m_Name: Player Nameplate
   m_TagString: Untagged
@@ -73,9 +74,22 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d4a0e70a519d4e8ca80da5a512b97792, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.PlayerNameplate
-  networkPlayer: {fileID: 2421189740215006424}
+  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.PlayerNameplateView
   nicknameText: {fileID: 768342213921249256}
+--- !u!114 &2381114350594318130
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1084354815478470994}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7af4cfab1d824dd8bb0a06a74a113120, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.PlayerNameplateController
+  networkPlayer: {fileID: 2421189740215006424}
+  view: {fileID: 2381114350594318129}
 --- !u!1 &3719512231643071471
 GameObject:
   m_ObjectHideFlags: 0
@@ -225,7 +239,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 07753ffdc07aca34a915a3689b068285, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SimpleSummon.Runtime.OrbitCameraController
+  m_EditorClassIdentifier: Assembly-CSharp::SimpleSummon.Runtime.PlayerCameraController
   playerRoot: {fileID: 2289302114837585192}
   cameraPivot: {fileID: 4997426594296149009}
   lookAction: {fileID: 11400000, guid: 9868743e6e1890143b1d85c468bc64e0, type: 2}
@@ -823,7 +837,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fdd9b6cdab814c52b685428ff21a4efd, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SimpleSummon.Runtime.SummonDrawingMode
+  m_EditorClassIdentifier: Assembly-CSharp::SimpleSummon.Runtime.SignDrawingMode
   playerController: {fileID: 3495081197364641066}
   interactionController: {fileID: 6151945242746905974}
   lookController: {fileID: 507162505234635538}
@@ -841,7 +855,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f499e7f48d419c145812b193fd16c991, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.SignPuzzleMode
+  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.SignBuilderMode
   playerController: {fileID: 3495081197364641066}
   interactionController: {fileID: 6151945242746905974}
   lookController: {fileID: 507162505234635538}

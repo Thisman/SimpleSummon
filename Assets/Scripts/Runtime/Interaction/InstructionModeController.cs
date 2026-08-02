@@ -8,7 +8,7 @@ namespace SimpleSummon.Runtime
     {
         [SerializeField] private PlayerController playerController;
         [SerializeField] private PlayerInteractionController interactionController;
-        [SerializeField] private OrbitCameraController lookController;
+        [SerializeField] private PlayerCameraController lookController;
         [SerializeField] private Transform cameraTransform;
         [SerializeField] private InputActionReference exitAction;
         [SerializeField] private GameObject instructionContainer;
@@ -98,7 +98,7 @@ namespace SimpleSummon.Runtime
             cameraTransform.localScale = instruction.CameraScale;
 
             SetInstructionPanelActive(true);
-            LocalPlayerHud.Instance?.EnterModalMode();
+            LocalPlayerHudController.Instance?.EnterModalMode();
             SetPlayerRenderingOff(true);
             InteractiveMarker.SetMarkersVisible(false);
             exitInput.Enable();
@@ -108,7 +108,7 @@ namespace SimpleSummon.Runtime
         {
             exitInput.Disable();
             SetInstructionPanelActive(false);
-            LocalPlayerHud.Instance?.ExitModalMode();
+            LocalPlayerHudController.Instance?.ExitModalMode();
             SetPlayerRenderingOff(false);
             InteractiveMarker.SetMarkersVisible(true);
             activeInstruction = null;
@@ -137,9 +137,9 @@ namespace SimpleSummon.Runtime
 
         private void SetInstructionPanelActive(bool active)
         {
-            if (instructionContainer == null && LocalPlayerHud.Instance != null)
+            if (instructionContainer == null && LocalPlayerHudController.Instance != null)
             {
-                instructionContainer = LocalPlayerHud.Instance.InstructionContainer;
+                instructionContainer = LocalPlayerHudController.Instance.InstructionContainer;
             }
 
             if (instructionContainer != null)

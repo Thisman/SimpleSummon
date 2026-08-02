@@ -1108,7 +1108,7 @@
             ]
         },
         {
-            "name": "SignPuzzle",
+            "name": "SignBuilder",
             "id": "a62b6d54-aab4-4bea-8611-01fec06d6f20",
             "actions": [
                 {

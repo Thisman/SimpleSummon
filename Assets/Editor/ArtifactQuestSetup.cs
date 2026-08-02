@@ -28,7 +28,7 @@ namespace SimpleSummon.Editor
             }
 
             NetworkQuestState questState = UnityEngine.Object.FindAnyObjectByType<NetworkQuestState>();
-            LocalPlayerHud hud = UnityEngine.Object.FindAnyObjectByType<LocalPlayerHud>();
+            LocalPlayerHudView hud = UnityEngine.Object.FindAnyObjectByType<LocalPlayerHudView>();
             if (questState == null || hud == null)
             {
                 Debug.LogError("Artifact quest setup requires NetworkQuestState and Player HUD in Game.unity.");
@@ -50,7 +50,7 @@ namespace SimpleSummon.Editor
         }
 
         private static CraftingController SetupHud(
-            LocalPlayerHud hud,
+            LocalPlayerHudView hud,
             NetworkQuestState questState,
             TMP_FontAsset font)
         {
@@ -288,7 +288,7 @@ namespace SimpleSummon.Editor
 
         private static void FixStaticCollectables(NetworkQuestState questState)
         {
-            foreach (CollectableItem collectable in UnityEngine.Object.FindObjectsByType<CollectableItem>(
+            foreach (CollectableItemController collectable in UnityEngine.Object.FindObjectsByType<CollectableItemController>(
                          FindObjectsInactive.Include))
             {
                 SetReference(collectable, "questState", questState);
