@@ -15,6 +15,9 @@ namespace SimpleSummon.Runtime
         public UnityEngine.UI.Button SubmitRitualSignButton =>
             view.SubmitRitualSignButton;
 
+        public void SetGameplayHudVisible(bool visible) =>
+            view.SetGameplayHudVisible(visible);
+
         private void Awake()
         {
             Instance = this;

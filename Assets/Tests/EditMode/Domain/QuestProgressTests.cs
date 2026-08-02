@@ -22,10 +22,24 @@ namespace SimpleSummon.Domain.Tests
         {
             QuestProgress progress = new();
 
-            progress.Apply(true, true);
+            progress.Apply(true, true, 2, 3);
 
             Assert.That(progress.BossHeartCollected, Is.True);
             Assert.That(progress.SignDrawn, Is.True);
+            Assert.That(progress.Ingredients.GreenBottleCount, Is.EqualTo(2));
+            Assert.That(progress.Ingredients.BrownBottleCount, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void Ingredients_AreCountedByType()
+        {
+            QuestProgress progress = new();
+
+            Assert.That(progress.Ingredients.Add(IngredientType.BottleGreen), Is.True);
+            Assert.That(progress.Ingredients.Add(IngredientType.BottleBrown), Is.True);
+            Assert.That(progress.Ingredients.Add(IngredientType.None), Is.False);
+            Assert.That(progress.Ingredients.GreenBottleCount, Is.EqualTo(1));
+            Assert.That(progress.Ingredients.BrownBottleCount, Is.EqualTo(1));
         }
     }
 }

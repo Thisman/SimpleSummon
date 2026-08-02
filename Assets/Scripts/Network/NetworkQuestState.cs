@@ -9,6 +9,8 @@ namespace SimpleSummon.Network
     {
         private readonly NetworkVariable<bool> bossHeartCollected = new();
         private readonly NetworkVariable<bool> signDrawn = new();
+        private readonly NetworkVariable<int> greenBottleCount = new();
+        private readonly NetworkVariable<int> brownBottleCount = new();
         private readonly QuestProgress progress = new();
         private QuestProgressService service;
 
@@ -23,11 +25,19 @@ namespace SimpleSummon.Network
             ? bossHeartCollected.Value
             : progress.BossHeartCollected;
         public bool SignDrawn => IsSpawned ? signDrawn.Value : progress.SignDrawn;
+        public int GreenBottleCount => IsSpawned
+            ? greenBottleCount.Value
+            : progress.Ingredients.GreenBottleCount;
+        public int BrownBottleCount => IsSpawned
+            ? brownBottleCount.Value
+            : progress.Ingredients.BrownBottleCount;
 
         public override void OnNetworkSpawn()
         {
             bossHeartCollected.OnValueChanged += HandleBossHeartChanged;
             signDrawn.OnValueChanged += HandleSignDrawnChanged;
+            greenBottleCount.OnValueChanged += HandleIngredientChanged;
+            brownBottleCount.OnValueChanged += HandleIngredientChanged;
             if (IsServer)
             {
                 Publish();
@@ -43,6 +53,8 @@ namespace SimpleSummon.Network
         {
             bossHeartCollected.OnValueChanged -= HandleBossHeartChanged;
             signDrawn.OnValueChanged -= HandleSignDrawnChanged;
+            greenBottleCount.OnValueChanged -= HandleIngredientChanged;
+            brownBottleCount.OnValueChanged -= HandleIngredientChanged;
         }
 
         public void CollectBossHeart()
@@ -67,12 +79,29 @@ namespace SimpleSummon.Network
             }
         }
 
+        public bool CollectIngredient(IngredientType ingredient)
+        {
+            if (IsSpawned && !IsServer)
+            {
+                return false;
+            }
+
+            bool changed = service.CollectIngredient(ingredient);
+            if (changed)
+            {
+                Publish();
+            }
+            return changed;
+        }
+
         private void Publish()
         {
             if (IsSpawned)
             {
                 bossHeartCollected.Value = progress.BossHeartCollected;
                 signDrawn.Value = progress.SignDrawn;
+                greenBottleCount.Value = progress.Ingredients.GreenBottleCount;
+                brownBottleCount.Value = progress.Ingredients.BrownBottleCount;
             }
             else
             {
@@ -82,7 +111,11 @@ namespace SimpleSummon.Network
 
         private void ApplyReplicatedState()
         {
-            progress.Apply(bossHeartCollected.Value, signDrawn.Value);
+            progress.Apply(
+                bossHeartCollected.Value,
+                signDrawn.Value,
+                greenBottleCount.Value,
+                brownBottleCount.Value);
         }
 
         private void HandleBossHeartChanged(bool _, bool __)
@@ -92,6 +125,12 @@ namespace SimpleSummon.Network
         }
 
         private void HandleSignDrawnChanged(bool _, bool __)
+        {
+            ApplyReplicatedState();
+            Changed?.Invoke();
+        }
+
+        private void HandleIngredientChanged(int _, int __)
         {
             ApplyReplicatedState();
             Changed?.Invoke();

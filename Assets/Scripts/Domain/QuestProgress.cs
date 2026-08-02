@@ -2,8 +2,11 @@ namespace SimpleSummon.Domain
 {
     public sealed class QuestProgress
     {
+        private readonly IngredientInventory ingredients = new();
+
         public bool BossHeartCollected { get; private set; }
         public bool SignDrawn { get; private set; }
+        public IngredientInventory Ingredients => ingredients;
 
         public bool CollectBossHeart()
         {
@@ -27,10 +30,11 @@ namespace SimpleSummon.Domain
             return true;
         }
 
-        public void Apply(bool bossHeart, bool signDrawn)
+        public void Apply(bool bossHeart, bool signDrawn, int greenBottles, int brownBottles)
         {
             BossHeartCollected = bossHeart;
             SignDrawn = signDrawn;
+            ingredients.Apply(greenBottles, brownBottles);
         }
     }
 }

@@ -2,13 +2,15 @@
   "name": "SimpleSummon.Editor",
   "rootNamespace": "SimpleSummon.Editor",
   "references": [
+    "SimpleSummon.Domain",
     "SimpleSummon.Network",
     "SimpleSummon.Runtime",
     "Unity.InputSystem",
     "Unity.Netcode.Runtime",
     "Unity.Networking.Transport",
     "UnityEngine.UI",
-    "Unity.TextMeshPro"
+    "Unity.TextMeshPro",
+    "Unity.AI.Navigation"
   ],
   "includePlatforms": [
     "Editor"

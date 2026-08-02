@@ -14,5 +14,7 @@ namespace SimpleSummon.Application
 
         public bool CollectBossHeart() => progress.CollectBossHeart();
         public bool RecordSignDrawn() => progress.DrawSign();
+        public bool CollectIngredient(IngredientType ingredient) =>
+            progress.Ingredients.Add(ingredient);
     }
 }
