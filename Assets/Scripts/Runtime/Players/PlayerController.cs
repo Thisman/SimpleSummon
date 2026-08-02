@@ -14,10 +14,6 @@ namespace SimpleSummon.Runtime
     [RequireComponent(typeof(PlayerSettings))]
     public sealed class PlayerController : MonoBehaviour, IDamageable
     {
-        private const float MinimumAttackDirectionDot = 0.70710678f;
-        private const int AttackColliderBufferSize = 32;
-        private const int AimHitBufferSize = 32;
-
         private static readonly int MovementSpeedId = Animator.StringToHash("MovementSpeed");
         private static readonly int AttackId = Animator.StringToHash("Attack");
         private static readonly int DeathId = Animator.StringToHash("Death");
@@ -40,10 +36,10 @@ namespace SimpleSummon.Runtime
         private NetworkPlayer networkPlayer;
         private UnitModel model;
         private PlayerSettings settings;
-        private Texture2D damageVignette;
+        private DamageVignette damageVignette;
+        private PlayerCombatTargeting combatTargeting;
         private Vector3 horizontalVelocity;
         private float verticalVelocity;
-        private float damageVignetteTime;
         private bool inputEnabled;
         private InputAction moveInput;
         private InputAction jumpInput;
@@ -52,9 +48,6 @@ namespace SimpleSummon.Runtime
         private Quaternion fallbackSpawnRotation;
         private bool replicatedDead;
         private bool replicatedStateInitialized;
-        private readonly Collider[] attackColliders =
-            new Collider[AttackColliderBufferSize];
-        private readonly RaycastHit[] aimHits = new RaycastHit[AimHitBufferSize];
 
         public event Action Respawned;
         public event Action<float, float> VitalStateChanged;
@@ -75,7 +68,10 @@ namespace SimpleSummon.Runtime
             orbitCamera = cameraTransform.GetComponent<OrbitCameraController>();
             cameraTransform.gameObject.SetActive(
                 SceneManager.GetActiveScene().name == NetworkSessionService.GameSceneName);
-            damageVignette = CreateDamageVignette();
+            damageVignette = new DamageVignette(
+                damageVignetteDuration,
+                damageVignetteOpacity);
+            combatTargeting = new PlayerCombatTargeting(transform);
 
             settings = GetComponent<PlayerSettings>();
             model = new UnitModel(
@@ -119,12 +115,12 @@ namespace SimpleSummon.Runtime
             moveInput?.Dispose();
             jumpInput?.Dispose();
             attackInput?.Dispose();
-            Destroy(damageVignette);
+            damageVignette.Dispose();
         }
 
         private void Update()
         {
-            damageVignetteTime = Mathf.Max(0f, damageVignetteTime - Time.unscaledDeltaTime);
+            damageVignette.Tick(Time.unscaledDeltaTime);
 
             if (model.IsDead)
             {
@@ -255,7 +251,10 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            if (TryGetClosestAttackTarget(out IDamageable target))
+            if (combatTargeting.TryGetClosestAttackTarget(
+                settings.AttackRange,
+                settings.AttackMask,
+                out IDamageable target))
             {
                 target.TakeDamage(model.Damage);
             }
@@ -274,7 +273,7 @@ namespace SimpleSummon.Runtime
             networkPlayer?.PublishVitalState(model.CurrentHealth, model.IsDead);
             damageFlash.Play();
             orbitCamera.PlayDamageShake();
-            damageVignetteTime = damageVignetteDuration;
+            damageVignette.Play();
             if (!model.IsDead)
             {
                 return;
@@ -288,19 +287,7 @@ namespace SimpleSummon.Runtime
 
         private void OnGUI()
         {
-            if (damageVignetteTime <= 0f || damageVignetteDuration <= 0f)
-            {
-                return;
-            }
-
-            float normalizedTime = damageVignetteTime / damageVignetteDuration;
-            float pulse = Mathf.Sin(normalizedTime * Mathf.PI * 0.5f);
-            GUI.color = new Color(1f, 1f, 1f, pulse * damageVignetteOpacity);
-            GUI.DrawTexture(
-                new Rect(0f, 0f, Screen.width, Screen.height),
-                damageVignette,
-                ScaleMode.StretchToFill);
-            GUI.color = Color.white;
+            damageVignette.Draw();
         }
 
         public void CompleteDeathAnimation()
@@ -416,92 +403,8 @@ namespace SimpleSummon.Runtime
             if (networkPlayer.CanReadLocalInput)
             {
                 orbitCamera.PlayDamageShake();
-                damageVignetteTime = damageVignetteDuration;
+                damageVignette.Play();
             }
-        }
-
-        private bool TryGetClosestAttackTarget(out IDamageable target)
-        {
-            int colliderCount = Physics.OverlapSphereNonAlloc(
-                transform.position,
-                settings.AttackRange,
-                attackColliders,
-                settings.AttackMask,
-                QueryTriggerInteraction.Ignore);
-
-            target = null;
-            float closestSqrDistance = float.PositiveInfinity;
-            float attackRangeSqr = settings.AttackRange * settings.AttackRange;
-
-            for (int i = 0; i < colliderCount; i++)
-            {
-                Collider collider = attackColliders[i];
-                if (collider.transform.IsChildOf(transform))
-                {
-                    continue;
-                }
-
-                IDamageable candidate = collider.GetComponentInParent<IDamageable>();
-                if (candidate == null || candidate.IsDead)
-                {
-                    continue;
-                }
-
-                Component candidateComponent = (Component)candidate;
-                if (candidateComponent is PlayerController)
-                {
-                    continue;
-                }
-
-                Vector3 direction = candidateComponent.transform.position - transform.position;
-                direction.y = 0f;
-
-                float sqrDistance = direction.sqrMagnitude;
-                if (sqrDistance <= 0f ||
-                    sqrDistance > attackRangeSqr ||
-                    Vector3.Dot(transform.forward, direction.normalized) < MinimumAttackDirectionDot ||
-                    sqrDistance >= closestSqrDistance)
-                {
-                    continue;
-                }
-
-                target = candidate;
-                closestSqrDistance = sqrDistance;
-            }
-
-            return target != null;
-        }
-
-        private static Texture2D CreateDamageVignette()
-        {
-            const int textureSize = 128;
-            Texture2D texture = new Texture2D(
-                textureSize,
-                textureSize,
-                TextureFormat.RGBA32,
-                false);
-            Color[] pixels = new Color[textureSize * textureSize];
-
-            for (int y = 0; y < textureSize; y++)
-            {
-                for (int x = 0; x < textureSize; x++)
-                {
-                    float normalizedX = (x + 0.5f) / textureSize * 2f - 1f;
-                    float normalizedY = (y + 0.5f) / textureSize * 2f - 1f;
-                    float distance = Mathf.Max(
-                        Mathf.Abs(normalizedX),
-                        Mathf.Abs(normalizedY));
-                    float alpha = Mathf.SmoothStep(
-                        0f,
-                        1f,
-                        Mathf.InverseLerp(0.82f, 1f, distance));
-                    pixels[y * textureSize + x] = new Color(0.75f, 0f, 0f, alpha);
-                }
-            }
-
-            texture.SetPixels(pixels);
-            texture.Apply(false, true);
-            return texture;
         }
 
         private static NumericsVector3 ToNumerics(Vector3 value)
@@ -512,7 +415,11 @@ namespace SimpleSummon.Runtime
         private void FaceAimedTarget()
         {
             Ray ray = new Ray(cameraTransform.position, cameraTransform.forward);
-            if (!TryGetAimedTarget(ray, out IDamageable target, out _))
+            if (!combatTargeting.TryGetAimedTarget(
+                ray,
+                settings.AimRayDistance,
+                settings.AttackMask,
+                out IDamageable target))
             {
                 return;
             }
@@ -526,46 +433,5 @@ namespace SimpleSummon.Runtime
             }
         }
 
-        private bool TryGetAimedTarget(
-            Ray ray,
-            out IDamageable target,
-            out RaycastHit targetHit)
-        {
-            int hitCount = Physics.RaycastNonAlloc(
-                ray,
-                aimHits,
-                settings.AimRayDistance,
-                settings.AttackMask,
-                QueryTriggerInteraction.Ignore);
-
-            target = null;
-            targetHit = default;
-            float closestDistance = float.PositiveInfinity;
-
-            for (int i = 0; i < hitCount; i++)
-            {
-                RaycastHit hit = aimHits[i];
-                if (hit.transform.IsChildOf(transform))
-                {
-                    continue;
-                }
-
-                IDamageable candidate =
-                    hit.collider.GetComponentInParent<IDamageable>();
-                if (candidate == null ||
-                    candidate is PlayerController ||
-                    candidate.IsDead ||
-                    hit.distance >= closestDistance)
-                {
-                    continue;
-                }
-
-                target = candidate;
-                targetHit = hit;
-                closestDistance = hit.distance;
-            }
-
-            return target != null;
-        }
     }
 }

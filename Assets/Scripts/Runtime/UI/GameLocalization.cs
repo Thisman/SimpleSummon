@@ -1,10 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 namespace SimpleSummon.Runtime
 {
@@ -176,59 +172,4 @@ namespace SimpleSummon.Runtime
         }
     }
 
-    public static class LocalizationSceneBinder
-    {
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void Initialize()
-        {
-            SceneManager.sceneLoaded += HandleSceneLoaded;
-            GameLocalization.LocaleChanged += RefreshActiveScene;
-            Bind(SceneManager.GetActiveScene());
-        }
-
-        private static void HandleSceneLoaded(Scene scene, LoadSceneMode _) => Bind(scene);
-        private static void RefreshActiveScene() => Bind(SceneManager.GetActiveScene());
-
-        private static void Bind(Scene scene)
-        {
-            if (!scene.IsValid() || !scene.isLoaded)
-            {
-                return;
-            }
-
-            GameObject[] roots = scene.GetRootGameObjects();
-            foreach (Text text in roots.SelectMany(x => x.GetComponentsInChildren<Text>(true)))
-            {
-                if (GameLocalization.TryGetKey(text.text, out string key))
-                {
-                    text.text = GameLocalization.Get(key);
-                }
-            }
-
-            foreach (TMP_Text text in roots.SelectMany(x => x.GetComponentsInChildren<TMP_Text>(true)))
-            {
-                if (GameLocalization.TryGetKey(text.text, out string key))
-                {
-                    text.text = GameLocalization.Get(key);
-                }
-            }
-
-            if (scene.name == "MainMenu")
-            {
-                Button ru = FindButton(roots, "RuButton");
-                Button en = FindButton(roots, "EngButton");
-                MainMenuController menu = roots.SelectMany(x => x.GetComponentsInChildren<MainMenuController>(true)).FirstOrDefault();
-                if (ru != null && en != null && menu != null && menu.GetComponent<LanguageButtons>() == null)
-                {
-                    var buttons = menu.gameObject.AddComponent<LanguageButtons>();
-                    buttons.Configure(ru, en);
-                }
-            }
-        }
-
-        private static Button FindButton(GameObject[] roots, string objectName)
-        {
-            return roots.SelectMany(x => x.GetComponentsInChildren<Button>(true)).FirstOrDefault(x => x.name == objectName);
-        }
-    }
 }
