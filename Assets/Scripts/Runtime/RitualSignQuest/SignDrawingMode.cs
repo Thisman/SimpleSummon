@@ -22,7 +22,7 @@ namespace SimpleSummon.Runtime
         private GameObject summonContainer;
         private RectTransform signContainer;
         private SignDrawingGraphic signGraphic;
-        private Button summonButton;
+        private Button submitRitualSignButton;
         private float sendTime;
         private bool drawing;
 
@@ -58,9 +58,9 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            if (summonButton.interactable &&
+            if (submitRitualSignButton.interactable &&
                 drawingInput.DrawStarted &&
-                IsPointerOverSummonButton())
+                IsPointerOverSubmitRitualSignButton())
             {
                 Finish();
                 return;
@@ -104,7 +104,7 @@ namespace SimpleSummon.Runtime
                 FlushPoints();
             }
 
-            summonButton.interactable =
+            submitRitualSignButton.interactable =
                 ritual.PointCount + strokeBuffer.Count > 1;
         }
 
@@ -126,12 +126,12 @@ namespace SimpleSummon.Runtime
             summonContainer = hud.SummonContainer;
             signContainer = hud.SignContainer;
             signGraphic = hud.SignDrawingGraphic;
-            summonButton = hud.SummonButton;
+            submitRitualSignButton = hud.SubmitRitualSignButton;
             canvasCoordinates = new SignCanvasCoordinates(signContainer);
 
             signGraphic.SetRitual(ritual);
-            summonButton.onClick.AddListener(Finish);
-            summonButton.interactable = ritual.PointCount > 1;
+            submitRitualSignButton.onClick.AddListener(Finish);
+            submitRitualSignButton.interactable = ritual.PointCount > 1;
             summonContainer.SetActive(true);
             playerController.SetLocalInputEnabled(false);
             playerController.StopHorizontalMovement();
@@ -157,9 +157,9 @@ namespace SimpleSummon.Runtime
             drawing = false;
 
             drawingInput.Disable();
-            if (summonButton != null)
+            if (submitRitualSignButton != null)
             {
-                summonButton.onClick.RemoveListener(Finish);
+                submitRitualSignButton.onClick.RemoveListener(Finish);
             }
             if (summonContainer != null)
             {
@@ -192,9 +192,10 @@ namespace SimpleSummon.Runtime
                 out normalized);
         }
 
-        private bool IsPointerOverSummonButton()
+        private bool IsPointerOverSubmitRitualSignButton()
         {
-            RectTransform buttonTransform = (RectTransform)summonButton.transform;
+            RectTransform buttonTransform =
+                (RectTransform)submitRitualSignButton.transform;
             return canvasCoordinates.Contains(
                 buttonTransform,
                 drawingInput.PointerPosition);

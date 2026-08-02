@@ -40,7 +40,7 @@ namespace SimpleSummon.Runtime
             ["lobby.room"] = ("Комната", "Room"),
             ["lobby.host"] = ("ХОСТ", "HOST"),
             ["lobby.code_copied"] = ("Код комнаты скопирован.", "Room code copied."),
-            ["game.summon"] = ("Призвать", "Summon"),
+            ["game.submit_ritual_sign"] = ("Готово", "Done"),
             ["game.exit_drawing"] = ("Нажмите Esc чтобы выйти", "Press Esc to exit"),
             ["game.drawing_controls"] = ("Зажмите Shift + ЛКМ, чтобы стереть\nНажмите Esc чтобы выйти", "Hold Shift + LMB to erase\nPress Esc to exit"),
             ["game.draw_sign"] = ("Нарисуйте знак призыва", "Draw the summoning sign"),

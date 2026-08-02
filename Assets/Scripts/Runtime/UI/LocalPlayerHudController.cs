@@ -12,7 +12,8 @@ namespace SimpleSummon.Runtime
         public GameObject SummonContainer => view.SummonContainer;
         public RectTransform SignContainer => view.SignContainer;
         public SignDrawingGraphic SignDrawingGraphic => view.SignDrawingGraphic;
-        public UnityEngine.UI.Button SummonButton => view.SummonButton;
+        public UnityEngine.UI.Button SubmitRitualSignButton =>
+            view.SubmitRitualSignButton;
 
         private void Awake()
         {

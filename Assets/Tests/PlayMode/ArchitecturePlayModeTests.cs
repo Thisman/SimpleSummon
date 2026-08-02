@@ -33,12 +33,13 @@ namespace SimpleSummon.Tests.PlayMode
             NetworkQuestState questState =
                 Object.FindAnyObjectByType<NetworkQuestState>();
             Assert.That(questState, Is.Not.Null);
-            Assert.That(questState.SignDrawn, Is.True);
+            Assert.That(questState.SignDrawn, Is.False);
 
             ritual.Finish();
 
             Assert.That(ritual.State, Is.EqualTo(SignDrawingState.Finished));
             Assert.That(ritual.PointCount, Is.EqualTo(2));
+            Assert.That(questState.SignDrawn, Is.True);
         }
     }
 }

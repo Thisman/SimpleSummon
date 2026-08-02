@@ -9,13 +9,13 @@ namespace SimpleSummon.Runtime
         [SerializeField] private GameObject summonContainer;
         [SerializeField] private RectTransform signContainer;
         [SerializeField] private SignDrawingGraphic summonSignGraphic;
-        [SerializeField] private Button summonButton;
+        [SerializeField] private Button submitRitualSignButton;
 
         public InteractionPromptView InteractionPrompt => interactionPrompt;
         public GameObject SummonContainer => summonContainer;
         public RectTransform SignContainer => signContainer;
         public SignDrawingGraphic SignDrawingGraphic => summonSignGraphic;
-        public Button SummonButton => summonButton;
+        public Button SubmitRitualSignButton => submitRitualSignButton;
 
         public void Initialize()
         {

@@ -12295,7 +12295,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u041F\u0440\u0438\u0437\u0432\u0430\u0442\u044C"
+  m_text: "\u0413\u043E\u0442\u043E\u0432\u043E"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 10a2fba96e9a5454184e2d8f212b701b, type: 2}
   m_sharedMaterial: {fileID: -3739382525439708303, guid: 10a2fba96e9a5454184e2d8f212b701b, type: 2}
@@ -83983,7 +83983,7 @@ GameObject:
   - component: {fileID: 1800178181}
   - component: {fileID: 1800178180}
   m_Layer: 0
-  m_Name: SummonButton
+  m_Name: SubmitRitualSignButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -102032,7 +102032,7 @@ MonoBehaviour:
   summonContainer: {fileID: 983786702}
   signContainer: {fileID: 703251458}
   summonSignGraphic: {fileID: 703251461}
-  summonButton: {fileID: 1800178180}
+  submitRitualSignButton: {fileID: 1800178180}
 --- !u!114 &4000000005
 MonoBehaviour:
   m_ObjectHideFlags: 0
