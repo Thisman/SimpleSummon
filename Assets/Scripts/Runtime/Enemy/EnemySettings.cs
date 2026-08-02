@@ -12,7 +12,6 @@ namespace SimpleSummon.Runtime
         [SerializeField, Min(0f)] private float attackRadius = 1.5f;
         [SerializeField, Min(0f)] private float returnRadius = 12f;
         [SerializeField] private bool boss;
-        [SerializeField, Min(1f)] private float bossStatMultiplier = 5f;
 
         public float MovementSpeed => movementSpeed;
         public float AttackDelay => attackDelay;
@@ -22,6 +21,5 @@ namespace SimpleSummon.Runtime
         public float AttackRadius => attackRadius;
         public float ReturnRadius => returnRadius;
         public bool IsBoss => boss;
-        public float BossStatMultiplier => bossStatMultiplier;
     }
 }

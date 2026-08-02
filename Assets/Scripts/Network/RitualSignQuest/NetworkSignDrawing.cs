@@ -104,6 +104,7 @@ namespace SimpleSummon.Network
                         OfflineActorId,
                         submittedPoints)))
                 {
+                    questState.RecordSignDrawn();
                     DrawingChanged?.Invoke();
                 }
                 return;
@@ -238,6 +239,7 @@ namespace SimpleSummon.Network
             }
 
             drawingState.PublishAppended(previousCount);
+            questState.RecordSignDrawn();
         }
 
         private void EraseOnServer(ulong clientId, Vector2 position, float radius)

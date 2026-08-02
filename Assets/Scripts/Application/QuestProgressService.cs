@@ -12,13 +12,7 @@ namespace SimpleSummon.Application
             this.progress = progress ?? throw new ArgumentNullException(nameof(progress));
         }
 
-        public bool Collect(QuestCollectableType type, int id) =>
-            type == QuestCollectableType.SignFragment
-                ? progress.CollectSignFragment(id)
-                : progress.CollectBossHeart();
-
+        public bool CollectBossHeart() => progress.CollectBossHeart();
         public bool RecordSignDrawn() => progress.DrawSign();
-        public bool CollectArtifactResource() => progress.CollectArtifactResource();
-        public bool CraftArtifact() => progress.CraftArtifact();
     }
 }

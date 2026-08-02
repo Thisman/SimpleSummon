@@ -133,8 +133,6 @@ namespace SimpleSummon.Runtime
             summonButton.onClick.AddListener(Finish);
             summonButton.interactable = ritual.PointCount > 1;
             summonContainer.SetActive(true);
-            hud.EnterModalMode();
-
             playerController.SetLocalInputEnabled(false);
             playerController.StopHorizontalMovement();
             interactionController.SetLocalInputEnabled(false);
@@ -167,7 +165,6 @@ namespace SimpleSummon.Runtime
             {
                 summonContainer.SetActive(false);
             }
-            LocalPlayerHudController.Instance?.ExitModalMode();
             if (signGraphic != null)
             {
                 signGraphic.SetRitual(null);

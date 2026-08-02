@@ -30,6 +30,11 @@ namespace SimpleSummon.Tests.PlayMode
                 new NetworkSignPoint(new Vector2(0.1f, 0.1f), true),
                 new NetworkSignPoint(new Vector2(0.8f, 0.8f), false)
             });
+            NetworkQuestState questState =
+                Object.FindAnyObjectByType<NetworkQuestState>();
+            Assert.That(questState, Is.Not.Null);
+            Assert.That(questState.SignDrawn, Is.True);
+
             ritual.Finish();
 
             Assert.That(ritual.State, Is.EqualTo(SignDrawingState.Finished));

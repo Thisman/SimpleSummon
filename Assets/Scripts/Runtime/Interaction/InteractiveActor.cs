@@ -12,7 +12,7 @@ namespace SimpleSummon.Runtime
 
         public string InteractionText => interactionText;
         public bool IsLocalPresentation =>
-            interactable is InstructionInteraction or SignDrawingInteraction or CraftingInteraction;
+            interactable is SignDrawingInteraction;
 
         private void Awake()
         {

@@ -29,7 +29,7 @@ namespace SimpleSummon.Runtime
 
             died = onDied;
             networkState.StateChanged += HandleStateChanged;
-            networkState.LootStateChanged += HandleLootChanged;
+            networkState.DisappearedChanged += HandleDisappearedChanged;
         }
 
         public void Disable()
@@ -40,7 +40,7 @@ namespace SimpleSummon.Runtime
             }
 
             networkState.StateChanged -= HandleStateChanged;
-            networkState.LootStateChanged -= HandleLootChanged;
+            networkState.DisappearedChanged -= HandleDisappearedChanged;
             died = null;
         }
 
@@ -61,7 +61,7 @@ namespace SimpleSummon.Runtime
             HideIfDisappeared();
         }
 
-        private void HandleLootChanged()
+        private void HandleDisappearedChanged()
         {
             HideIfDisappeared();
         }

@@ -14,6 +14,8 @@ namespace SimpleSummon.Runtime
         private MaterialPropertyBlock[] originalPropertyBlocks;
         private Coroutine flashRoutine;
 
+        public Renderer[] Renderers => renderers;
+
         private void Awake()
         {
             originalPropertyBlocks = new MaterialPropertyBlock[renderers.Length];

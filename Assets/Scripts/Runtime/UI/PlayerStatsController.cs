@@ -1,32 +1,27 @@
-using SimpleSummon.Domain;
 using SimpleSummon.Network;
 using UnityEngine;
 
 namespace SimpleSummon.Runtime
 {
-    public sealed class QuestHudController : MonoBehaviour
+    public sealed class PlayerStatsController : MonoBehaviour
     {
-        [SerializeField] private NetworkQuestState questState;
-        [SerializeField] private QuestHudView view;
+        [SerializeField] private PlayerStatsView view;
 
         private PlayerController localController;
 
         private void OnEnable()
         {
-            questState.Changed += Refresh;
             NetworkPlayer.LocalPlayerChanged += BindLocalPlayer;
             PlayerRegistry.Changed += BindLocalPlayer;
-            GameLocalizationController.AddLocaleChangedListener(Refresh);
+            GameLocalizationController.AddLocaleChangedListener(RefreshHealth);
             BindLocalPlayer();
-            Refresh();
         }
 
         private void OnDisable()
         {
-            questState.Changed -= Refresh;
             NetworkPlayer.LocalPlayerChanged -= BindLocalPlayer;
             PlayerRegistry.Changed -= BindLocalPlayer;
-            GameLocalizationController.RemoveLocaleChangedListener(Refresh);
+            GameLocalizationController.RemoveLocaleChangedListener(RefreshHealth);
             UnbindLocalPlayer();
         }
 
@@ -59,21 +54,12 @@ namespace SimpleSummon.Runtime
 
         private void HandleVitalStateChanged(float health, float _) => RefreshHealth(health);
 
-        private void Refresh()
-        {
-            RefreshHealth(localController != null ? localController.CurrentHealth : 0f);
-            view.SetQuestState(
-                questState.BossHeartCollected,
-                questState.ArtifactResourceCount,
-                QuestProgress.ArtifactResourceRequirement,
-                questState.ArtifactCrafted,
-                questState.CollectedSignFragmentCount,
-                QuestProgress.SignFragmentCount);
-        }
-
         private void RefreshHealth(float health)
         {
             view.SetHealth(health, localController != null ? localController.MaximumHealth : 0f);
         }
+
+        private void RefreshHealth() =>
+            RefreshHealth(localController != null ? localController.CurrentHealth : 0f);
     }
 }

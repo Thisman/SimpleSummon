@@ -203,15 +203,8 @@ namespace SimpleSummon.Editor
                 hud.GetComponent<LocalPlayerHudController>() ??
                 hud.gameObject.AddComponent<LocalPlayerHudController>();
 
-            Transform exitHint = Object.FindObjectsByType<Transform>(
-                    FindObjectsInactive.Include)
-                .FirstOrDefault(item => item.name == "Instruction Exit Hint");
             SetSerializedField(hud, "interactionPrompt", prompt);
             SetSerializedField(hudController, "view", hud);
-            SetSerializedField(
-                hud,
-                "instructionExitHint",
-                exitHint != null ? exitHint.gameObject : null);
         }
 
         private static void AddNetworkComponents(GameObject target)

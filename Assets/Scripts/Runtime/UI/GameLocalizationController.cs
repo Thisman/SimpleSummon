@@ -24,7 +24,7 @@ namespace SimpleSummon.Runtime
             ["Зажмите E, чтобы начать призыв"] = "interaction.start_summon",
             ["Нажмите Е, чтобы подняться из подземелья"] = "interaction.return_lab",
             ["Нажмите Е, чтобы спуститься в подземелье"] = "interaction.enter_dungeon",
-            ["Нажмите E чтобы посмотреть инструкцию"] = "interaction.read"
+            ["Нажмите E, чтобы спуститься в подземелье"] = "interaction.enter_dungeon"
         };
 
         private static readonly Dictionary<string, (string Ru, string En)> Entries = new()
@@ -44,26 +44,12 @@ namespace SimpleSummon.Runtime
             ["game.exit_drawing"] = ("Нажмите Esc чтобы выйти", "Press Esc to exit"),
             ["game.drawing_controls"] = ("Зажмите Shift + ЛКМ, чтобы стереть\nНажмите Esc чтобы выйти", "Hold Shift + LMB to erase\nPress Esc to exit"),
             ["game.draw_sign"] = ("Нарисуйте знак призыва", "Draw the summoning sign"),
-            ["game.instructions"] = ("Для призыва нужен\n\n- Знак призыва\n- Сердце Босса\n- Чаша маны\n- to be continue\n- to be continue ", "The ritual requires\n\n- A summoning sign\n- The Boss's heart\n- A bowl of mana\n- to be continued\n- to be continued"),
-            ["game.exit_reading"] = ("Нажмите Esc чтобы выйти из просмотра", "Press Esc to stop reading"),
             ["hud.health"] = ("Здоровье", "Health"),
-            ["hud.boss_heart"] = ("Сердце босса", "Boss heart"),
-            ["hud.artifact_resources"] = ("Ресурсы артефакта", "Artifact resources"),
-            ["hud.artifact"] = ("Артефакт", "Artifact"),
-            ["hud.fragments"] = ("Фрагменты", "Fragments"),
-            ["hud.yes"] = ("Есть", "Yes"),
-            ["hud.no"] = ("Нет", "No"),
-            ["craft.title"] = ("Создание артефакта", "Craft the artifact"),
-            ["craft.hint"] = ("Перетащите все ресурсы в одну ячейку\nEsc — выйти", "Drag all resources into one slot\nEsc — exit"),
-            ["craft.exit_hint"] = ("Нажмите Esc, чтобы выйти из крафта", "Press Esc to exit crafting"),
-            ["craft.resources"] = ("Ресурсы", "Resources"),
-            ["craft.button"] = ("Скрафтить", "Craft"),
-            ["craft.complete"] = ("Артефакт создан", "Artifact crafted"),
-            ["interaction.craft"] = ("Зажмите E, чтобы создать артефакт", "Hold E to craft the artifact"),
+            ["instruction.sign"] = ("Нарисовать знак", "Draw the sign"),
+            ["instruction.boss"] = ("Достань сердце", "Obtain the heart"),
             ["interaction.start_summon"] = ("Зажмите E, чтобы начать призыв", "Hold E to begin the summoning"),
             ["interaction.return_lab"] = ("Нажмите Е, чтобы подняться из подземелья", "Press E to return to the laboratory"),
             ["interaction.enter_dungeon"] = ("Нажмите Е, чтобы спуститься в подземелье", "Press E to enter the dungeon"),
-            ["interaction.read"] = ("Нажмите E чтобы посмотреть инструкцию", "Press E to read the instructions"),
             ["error.room_full"] = ("Комната заполнена.", "The room is full."),
             ["error.game_started"] = ("Игра уже началась.", "The game has already started."),
             ["error.room_not_found"] = ("Комната с таким кодом не найдена.", "No room was found with that code."),
@@ -72,12 +58,6 @@ namespace SimpleSummon.Runtime
             ["error.leave_room"] = ("Не удалось корректно покинуть комнату.", "Could not leave the room correctly."),
             ["session.host_closed"] = ("Хост закрыл комнату.", "The host closed the room."),
             ["session.host_lost"] = ("Соединение с хостом потеряно.", "Connection to the host was lost.")
-        };
-        private static readonly Dictionary<string, (string Ru, string En)> SignBuilderEntries = new()
-        {
-            ["interaction.build_sign"] = ("Нажмите E, чтобы собрать знак", "Press E to assemble the sign"),
-            ["game.exit_sign_puzzle"] = ("Нажмите Esc чтобы выйти из сборки знака", "Press Esc to stop assembling the sign"),
-            ["game.assemble_sign"] = ("Соберите знак", "Assemble the sign")
         };
         private static string selectedCode;
 
@@ -122,8 +102,7 @@ namespace SimpleSummon.Runtime
 
         public static string Get(string key)
         {
-            if (!Entries.TryGetValue(key, out var entry) &&
-                !SignBuilderEntries.TryGetValue(key, out entry))
+            if (!Entries.TryGetValue(key, out var entry))
             {
                 return key;
             }
@@ -131,31 +110,12 @@ namespace SimpleSummon.Runtime
             return SelectedCode == EnglishLocaleCode ? entry.En : entry.Ru;
         }
 
-        public static string GetSignBuilderProgress(int collected, int total) =>
-            SelectedCode == EnglishLocaleCode
-                ? $"Collected {collected} of {total} fragments\nPress Esc to stop assembling the sign"
-                : $"Собрано {collected} из {total} фрагментов\nНажмите Esc чтобы выйти из сборки знака";
-
         public static string FormatHealth(float current, float maximum) =>
             $"{Get("hud.health")}: {Mathf.CeilToInt(current)} / {Mathf.CeilToInt(maximum)}";
-
-        public static string FormatQuestFlag(string key, bool value) =>
-            $"{Get(key)}: {Get(value ? "hud.yes" : "hud.no")}";
-
-        public static string FormatQuestCount(string key, int current, int total) =>
-            $"{Get(key)}: {current} / {total}";
 
         public static bool TryGetKey(string value, out string key)
         {
             string normalized = value?.Replace("\r\n", "\n").Trim();
-            foreach (var pair in SignBuilderEntries)
-            {
-                if (pair.Value.Ru.Trim() == normalized || pair.Value.En.Trim() == normalized)
-                {
-                    key = pair.Key;
-                    return true;
-                }
-            }
             foreach (var pair in Entries)
             {
                 if (pair.Value.Ru.Trim() == normalized || pair.Value.En.Trim() == normalized)

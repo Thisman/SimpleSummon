@@ -449,9 +449,6 @@ PrefabInstance:
       addedObject: {fileID: 3387408364826934418}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: fb7a17d9a2742854f80584d29a154056, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 3732152681549605069}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: fb7a17d9a2742854f80584d29a154056, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 3293251957253906703}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: fb7a17d9a2742854f80584d29a154056, type: 3}
       insertIndex: -1
@@ -465,9 +462,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: fb7a17d9a2742854f80584d29a154056, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6000000000000000001}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: fb7a17d9a2742854f80584d29a154056, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1673635013410140734}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: fb7a17d9a2742854f80584d29a154056, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6000000000000000010}
@@ -606,33 +600,6 @@ MonoBehaviour:
   - {fileID: 1646207334583883933}
   - {fileID: 7486167092200135748}
   duration: 0.12
---- !u!114 &3732152681549605069
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1481381398202910610}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5acd5f1dfb814a5080fe807d580edd26, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SimpleSummon.Runtime.InstructionModeController
-  playerController: {fileID: 3495081197364641066}
-  interactionController: {fileID: 6151945242746905974}
-  lookController: {fileID: 507162505234635538}
-  cameraTransform: {fileID: 7956193171298557545}
-  exitAction: {fileID: 11400000, guid: 6bd4b5405f8446a5a2f9838d9641d1e0, type: 2}
-  instructionContainer: {fileID: 0}
-  playerRenderers:
-  - {fileID: 9185146093796836972}
-  - {fileID: 519980712143948934}
-  - {fileID: 7704701585301760604}
-  - {fileID: 7017922017513116049}
-  - {fileID: 4299630770800301642}
-  - {fileID: 4339791170735509496}
-  - {fileID: 1646207334583883933}
-  - {fileID: 7486167092200135748}
 --- !u!114 &3293251957253906703
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -844,22 +811,6 @@ MonoBehaviour:
   inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   minimumPointDistance: 0.005
   sendInterval: 0.05
---- !u!114 &1673635013410140734
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1481381398202910610}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f499e7f48d419c145812b193fd16c991, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.SignBuilderMode
-  playerController: {fileID: 3495081197364641066}
-  interactionController: {fileID: 6151945242746905974}
-  lookController: {fileID: 507162505234635538}
-  inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
 --- !u!137 &1646207334583883933 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1051315088957334110, guid: fb7a17d9a2742854f80584d29a154056, type: 3}

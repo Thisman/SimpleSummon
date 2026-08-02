@@ -17,8 +17,6 @@ namespace SimpleSummon.Runtime
 
         [SerializeField] private Animator animator;
         [SerializeField] private DamageFlash damageFlash;
-        [SerializeField] private Renderer[] visualRenderers;
-        [SerializeField] private EnemyLootCollectable loot;
         [SerializeField] private NetworkQuestState questState;
 
         private EnemySettings settings;
@@ -27,11 +25,9 @@ namespace SimpleSummon.Runtime
         private Vector3 homePosition;
         private EnemyBehaviorState state;
         private NetworkEnemyState networkState;
-        private bool bossWeakened;
         private EnemyTargetTracker targetTracker;
         private EnemyNavigation navigation;
         private EnemyPresentation presentation;
-        private EnemyBossProgression bossProgression;
         private EnemyReplicationPresenter replicationPresenter;
 
         public bool IsDead => model.IsDead;
@@ -43,15 +39,11 @@ namespace SimpleSummon.Runtime
             settings = GetComponent<EnemySettings>();
             networkState = GetComponent<NetworkEnemyState>();
             agent = GetComponent<NavMeshAgent>();
-            bossProgression = new EnemyBossProgression(settings, questState);
-            float statMultiplier = bossProgression.InitialStatMultiplier;
-            bossWeakened = bossProgression.IsInitiallyWeakened;
             model = EnemyCombatService.Create(
                 settings.MovementSpeed,
                 settings.AttackDelay,
                 settings.Damage,
-                settings.MaximumHealth,
-                statMultiplier);
+                settings.MaximumHealth);
 
             homePosition = transform.position;
             agent.speed = model.MovementSpeed;
@@ -61,7 +53,7 @@ namespace SimpleSummon.Runtime
             presentation = new EnemyPresentation(
                 animator,
                 damageFlash,
-                visualRenderers,
+                damageFlash.Renderers,
                 GetComponent<CapsuleCollider>());
             replicationPresenter = new EnemyReplicationPresenter(
                 networkState,
@@ -72,14 +64,12 @@ namespace SimpleSummon.Runtime
         private void OnEnable()
         {
             replicationPresenter.Enable(MarkReplicatedDead);
-            bossProgression.Enable(ApplyArtifactWeakening);
             targetTracker.Refresh();
         }
 
         private void OnDisable()
         {
             replicationPresenter.Disable();
-            bossProgression.Disable();
             targetTracker.Clear();
         }
 
@@ -211,31 +201,16 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            bossProgression.CollectHeart();
+            if (settings.IsBoss)
+            {
+                questState?.CollectBossHeart();
+            }
 
             presentation.Hide();
-
-            networkState?.PublishDeathCompleted(!settings.IsBoss && loot != null);
-            loot?.RefreshVisibility();
+            networkState?.PublishDeathCompleted();
         }
 
         private void MarkReplicatedDead() => state = EnemyBehaviorState.Dead;
-
-        private void ApplyArtifactWeakening()
-        {
-            if (!bossProgression.CanApplyWeakening(model, bossWeakened))
-            {
-                return;
-            }
-
-            model = EnemyCombatService.RemoveStatMultiplier(
-                model,
-                settings.MovementSpeed,
-                settings.AttackDelay,
-                settings.Damage,
-                settings.MaximumHealth);
-            bossWeakened = true;
-        }
 
         private void ForgetTarget()
         {
