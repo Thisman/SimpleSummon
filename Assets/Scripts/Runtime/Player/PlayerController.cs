@@ -48,6 +48,7 @@ namespace SimpleSummon.Runtime
         }
 
         public bool IsDead => model.IsDead;
+        public bool IsGrounded => locomotion.IsGrounded;
         public float CurrentHealth => model.CurrentHealth;
         public float MaximumHealth => model.MaximumHealth;
 

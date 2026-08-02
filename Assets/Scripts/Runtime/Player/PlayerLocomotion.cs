@@ -26,6 +26,7 @@ namespace SimpleSummon.Runtime
         }
 
         public float HorizontalSpeed => horizontalVelocity.magnitude;
+        public bool IsGrounded => controller.isGrounded;
 
         public void Tick(UnitModel model, Vector3 direction, bool jumpRequested, float deltaTime)
         {

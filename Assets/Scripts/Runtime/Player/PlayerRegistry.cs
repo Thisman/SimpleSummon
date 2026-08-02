@@ -10,6 +10,7 @@ namespace SimpleSummon.Runtime
         private static readonly List<PlayerController> players = new();
 
         public static event Action Changed;
+        public static IReadOnlyList<PlayerController> Players => players;
 
         public static void Register(PlayerController player)
         {
