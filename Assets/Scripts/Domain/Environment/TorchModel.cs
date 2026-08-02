@@ -156,7 +156,7 @@ namespace SimpleSummon.Domain
             Strength = Math.Min(100f, Strength + RecoveryRate * deltaTime);
             if (Strength >= 100f)
             {
-                Reset();
+                ResetFlame();
             }
         }
 

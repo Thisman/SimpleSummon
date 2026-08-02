@@ -59,6 +59,21 @@ namespace SimpleSummon.Domain.Tests
         }
 
         [Test]
+        public void ReachingFullStrengthKeepsCurrentHolder()
+        {
+            TorchModel model = CreateModel();
+            model.TryTake(10);
+            model.Tick(true, 6f);
+            model.Tick(false, 1f);
+
+            model.Tick(false, 2f);
+
+            Assert.That(model.IsHeldBy(10), Is.True);
+            Assert.That(model.IsAvailable, Is.False);
+            Assert.That(model.TryTake(20), Is.False);
+        }
+
+        [Test]
         public void StrengthNeverDropsBelowZero()
         {
             TorchModel model = CreateModel();
