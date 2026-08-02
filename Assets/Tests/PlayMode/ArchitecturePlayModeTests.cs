@@ -20,7 +20,7 @@ namespace SimpleSummon.Tests.PlayMode
             }
 
             NetworkSummonRitual ritual =
-                Object.FindFirstObjectByType<NetworkSummonRitual>();
+                Object.FindAnyObjectByType<NetworkSummonRitual>();
             Assert.That(ritual, Is.Not.Null);
 
             ritual.RequestClaim();

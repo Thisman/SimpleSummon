@@ -4,11 +4,11 @@ namespace SimpleSummon.Runtime
 {
     public sealed class CraftingInteraction : MonoBehaviour, IInteractable
     {
-        [SerializeField] private CraftingView craftingView;
+        [SerializeField] private CraftingController craftingController;
 
         public void Interact(GameObject interactor)
         {
-            craftingView.Open(interactor);
+            craftingController.Open(interactor);
         }
     }
 }

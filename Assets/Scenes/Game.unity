@@ -6048,6 +6048,7 @@ GameObject:
   - component: {fileID: 4000000001}
   - component: {fileID: 4000000002}
   - component: {fileID: 4000000003}
+  - component: {fileID: 4000000004}
   m_Layer: 0
   m_Name: Player HUD
   m_TagString: Untagged
@@ -14174,7 +14175,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dab5ecb30af2299488800c963c74048b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.CraftingInteraction
-  craftingView: {fileID: 4000000003}
+  craftingController: {fileID: 4000000004}
 --- !u!65 &316042454
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -26735,6 +26736,7 @@ GameObject:
   - component: {fileID: 589562732}
   - component: {fileID: 589562731}
   - component: {fileID: 589562730}
+  - component: {fileID: 589562734}
   m_Layer: 5
   m_Name: Artifact Quest HUD
   m_TagString: Untagged
@@ -26778,12 +26780,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c38431a70dfe8a94b8787048d46ad550, type: 3}
   m_Name: 
   m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.QuestHudView
-  questState: {fileID: 429919298}
   healthText: {fileID: 447789653}
   bossHeartText: {fileID: 54761727}
   resourcesText: {fileID: 565272761}
   artifactText: {fileID: 722618364}
   fragmentsText: {fileID: 1277868048}
+--- !u!114 &589562734
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 589562728}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ad3baf6f3bf48e58f463aca6bbce955, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.QuestHudController
+  questState: {fileID: 429919298}
+  view: {fileID: 589562730}
 --- !u!114 &589562731
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -99178,7 +99193,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: feb02fd41ee06dd42964d98b51d3b52a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.CraftingView
-  questState: {fileID: 429919298}
   canvas: {fileID: 149727436}
   container: {fileID: 1129061632}
   titleText: {fileID: 994605834}
@@ -99191,6 +99205,20 @@ MonoBehaviour:
   - {fileID: 660988137}
   - {fileID: 1242970552}
   - {fileID: 1000655153}
+--- !u!114 &4000000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 149727433}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad7ed9f4dbd64a4e82e680146dad23da, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SimpleSummon.Runtime::SimpleSummon.Runtime.CraftingController
+  questState: {fileID: 429919298}
+  view: {fileID: 4000000003}
 --- !u!1 &4000000010
 GameObject:
   m_ObjectHideFlags: 0

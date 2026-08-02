@@ -4,7 +4,7 @@ These rules are mandatory for every task that writes, reviews, or designs code.
 
 ## Required workflow
 
-Before changing code, identify the affected responsibility, layer, and existing contracts. After changing code, explicitly validate the result against every applicable item below. Report static/build checks separately from Unity Test Runner, Play Mode, multiplayer, visual, and profiling validation.
+Before designing or implementing code, identify the affected responsibility, layer, and existing contracts, then check every applicable item in the UI architecture checklist below. After changing code, check the UI architecture checklist again and explicitly validate the result against every applicable item in this document. Report static/build checks separately from Unity Test Runner, Play Mode, multiplayer, visual, and profiling validation.
 
 ## Dependencies
 
@@ -29,6 +29,40 @@ Before changing code, identify the affected responsibility, layer, and existing 
 - Runtime translates input, physics, UI, and Unity lifecycle events into Application calls.
 - Network receives RPCs, calls Application, and replicates results; RPC methods contain no gameplay rules.
 - Editor configures and validates assets, prefabs, and scenes.
+
+## UI architecture checklist
+
+Always check this block before designing or implementing UI code and check it again after the work is complete.
+
+### View (Runtime)
+
+- [ ] Only displays UI.
+- [ ] Only collects user input.
+- [ ] Raises UI events such as `BuyRequested`.
+- [ ] Does not know about Domain or business logic.
+- [ ] Does not call Application.
+
+### Controller / Presenter (Runtime)
+
+- [ ] Subscribes to View events.
+- [ ] Calls Application.
+- [ ] Receives state.
+- [ ] Updates View.
+- [ ] Contains no business rules.
+
+### Application
+
+- [ ] Executes use cases.
+- [ ] Works with Domain.
+- [ ] Changes game state.
+- [ ] Does not depend on Unity.
+- [ ] Does not know about View or Controller.
+
+### Responsibility check
+
+- View: What happened in the UI?
+- Controller: What needs to be done?
+- Application: How is it done according to the game rules?
 
 ## Files and responsibilities
 

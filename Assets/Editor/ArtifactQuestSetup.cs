@@ -38,9 +38,9 @@ namespace SimpleSummon.Editor
             EnsureBossTag();
             EnsureEventSystem();
             TMP_FontAsset font = LoadFont();
-            CraftingView craftingView = SetupHud(hud, questState, font);
+            CraftingController craftingController = SetupHud(hud, questState, font);
             SetupEnemies(questState);
-            SetupCraftingStation(craftingView);
+            SetupCraftingStation(craftingController);
             FixStaticCollectables(questState);
 
             EditorSceneManager.MarkSceneDirty(scene);
@@ -49,7 +49,7 @@ namespace SimpleSummon.Editor
             Debug.Log("Artifact quest setup completed.");
         }
 
-        private static CraftingView SetupHud(
+        private static CraftingController SetupHud(
             LocalPlayerHud hud,
             NetworkQuestState questState,
             TMP_FontAsset font)
@@ -82,16 +82,21 @@ namespace SimpleSummon.Editor
             TMP_Text fragments = CreateText("Fragments", questPanel.transform, font, 20);
 
             QuestHudView questView = questPanel.AddComponent<QuestHudView>();
-            SetReference(questView, "questState", questState);
+            QuestHudController questController = questPanel.AddComponent<QuestHudController>();
             SetReference(questView, "healthText", health);
             SetReference(questView, "bossHeartText", heart);
             SetReference(questView, "resourcesText", resources);
             SetReference(questView, "artifactText", artifact);
             SetReference(questView, "fragmentsText", fragments);
+            SetReference(questController, "questState", questState);
+            SetReference(questController, "view", questView);
             SetReference(hud, "questProgressContainer", questPanel);
 
             CraftingView craftingView = root.gameObject.GetComponent<CraftingView>() ??
                                         root.gameObject.AddComponent<CraftingView>();
+            CraftingController craftingController =
+                root.gameObject.GetComponent<CraftingController>() ??
+                root.gameObject.AddComponent<CraftingController>();
             GameObject container = CreateUiObject("Crafting Container", root);
             RectTransform containerRect = container.GetComponent<RectTransform>();
             containerRect.anchorMin = Vector2.zero;
@@ -163,7 +168,6 @@ namespace SimpleSummon.Editor
             buttonText.rectTransform.anchorMax = Vector2.one;
             buttonText.rectTransform.offsetMin = buttonText.rectTransform.offsetMax = Vector2.zero;
 
-            SetReference(craftingView, "questState", questState);
             SetReference(craftingView, "canvas", root.GetComponent<Canvas>());
             SetReference(craftingView, "container", container);
             SetReference(craftingView, "titleText", title);
@@ -171,8 +175,10 @@ namespace SimpleSummon.Editor
             SetReference(craftingView, "statusText", status);
             SetReference(craftingView, "craftButton", button);
             SetObjectList(craftingView, "slots", slots.Cast<UnityEngine.Object>().ToArray());
+            SetReference(craftingController, "questState", questState);
+            SetReference(craftingController, "view", craftingView);
             container.SetActive(false);
-            return craftingView;
+            return craftingController;
         }
 
         private static void SetupEnemies(NetworkQuestState questState)
@@ -242,7 +248,7 @@ namespace SimpleSummon.Editor
             SetObjectList(enemy, "visualRenderers", renderers);
         }
 
-        private static void SetupCraftingStation(CraftingView craftingView)
+        private static void SetupCraftingStation(CraftingController craftingController)
         {
             Transform station = UnityEngine.Object.FindObjectsByType<Transform>(
                     FindObjectsInactive.Include)
@@ -264,7 +270,7 @@ namespace SimpleSummon.Editor
                                               station.gameObject.AddComponent<CraftingInteraction>();
             InteractiveActor actor = station.GetComponent<InteractiveActor>() ??
                                      station.gameObject.AddComponent<InteractiveActor>();
-            SetReference(interaction, "craftingView", craftingView);
+            SetReference(interaction, "craftingController", craftingController);
             SetString(actor, "interactionText", "Зажмите E, чтобы создать артефакт");
             SetReference(actor, "interactionTarget", interaction);
         }

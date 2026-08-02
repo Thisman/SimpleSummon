@@ -1,25 +1,17 @@
-using System.Collections.Generic;
-using SimpleSummon.Domain;
 using SimpleSummon.Application;
+using SimpleSummon.Domain;
 using SimpleSummon.Network;
-using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.UI;
 
 namespace SimpleSummon.Runtime
 {
-    public sealed class CraftingView : MonoBehaviour
+    public sealed class CraftingController : MonoBehaviour
     {
         [SerializeField] private NetworkQuestState questState;
-        [SerializeField] private Canvas canvas;
-        [SerializeField] private GameObject container;
-        [SerializeField] private TMP_Text titleText;
-        [SerializeField] private Text exitHintText;
-        [SerializeField] private TMP_Text statusText;
-        [SerializeField] private Button craftButton;
-        [SerializeField] private List<CraftingSlotView> slots = new();
+        [SerializeField] private CraftingView view;
 
+        private int[] slotCounts;
         private bool open;
         private PlayerController playerController;
         private PlayerInteractionController interactionController;
@@ -27,24 +19,27 @@ namespace SimpleSummon.Runtime
 
         private void Awake()
         {
-            container.SetActive(false);
-            foreach (CraftingSlotView slot in slots)
-            {
-                slot.Configure(this, canvas);
-            }
-            craftButton.onClick.AddListener(Craft);
+            slotCounts = new int[view.SlotCount];
+            view.CraftRequested += Craft;
+            view.MergeRequested += Merge;
         }
 
         private void OnEnable()
         {
             questState.Changed += HandleQuestChanged;
-            GameLocalization.LocaleChanged += RefreshText;
+            GameLocalization.LocaleChanged += Refresh;
         }
 
         private void OnDisable()
         {
             questState.Changed -= HandleQuestChanged;
-            GameLocalization.LocaleChanged -= RefreshText;
+            GameLocalization.LocaleChanged -= Refresh;
+        }
+
+        private void OnDestroy()
+        {
+            view.CraftRequested -= Craft;
+            view.MergeRequested -= Merge;
         }
 
         private void Update()
@@ -66,19 +61,20 @@ namespace SimpleSummon.Runtime
             {
                 lookController.enabled = false;
             }
+
+            ResetSlots();
             open = true;
-            container.SetActive(true);
+            view.Show(slotCounts);
             LocalPlayerHud.Instance?.EnterModalMode();
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
-            ResetSlots();
-            RefreshText();
+            Refresh();
         }
 
         public void Close()
         {
             open = false;
-            container.SetActive(false);
+            view.Hide();
             LocalPlayerHud.Instance?.ExitModalMode();
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
@@ -88,27 +84,26 @@ namespace SimpleSummon.Runtime
             {
                 lookController.enabled = true;
             }
+
             playerController = null;
             interactionController = null;
             lookController = null;
         }
 
-        public void TryMerge(CraftingSlotView source, CraftingSlotView target)
+        private void Merge(int sourceIndex, int targetIndex)
         {
-            if (!open || source.Count <= 0 || target.Count <= 0)
+            if (!open || !ArtifactCraftingService.TryMerge(slotCounts, sourceIndex, targetIndex))
             {
                 return;
             }
 
-            target.SetCount(target.Count + source.Count);
-            source.SetCount(0);
-            RefreshCraftButton();
+            view.SetSlotCounts(slotCounts);
+            Refresh();
         }
 
         private void Craft()
         {
-            if (HasCompleteStack() &&
-                questState.ArtifactResourceCount == QuestProgress.ArtifactResourceRequirement)
+            if (CanCraft())
             {
                 questState.RequestCraftArtifact();
             }
@@ -120,50 +115,43 @@ namespace SimpleSummon.Runtime
             {
                 return;
             }
+
             if (questState.ArtifactCrafted)
             {
                 ResetSlots();
+                view.SetSlotCounts(slotCounts);
             }
-            RefreshText();
+
+            Refresh();
         }
 
         private void ResetSlots()
         {
             int resources = questState.ArtifactResourceCount;
-            for (int i = 0; i < slots.Count; i++)
+            for (int i = 0; i < slotCounts.Length; i++)
             {
-                slots[i].SetCount(i < resources ? 1 : 0);
+                slotCounts[i] = i < resources ? 1 : 0;
             }
-            RefreshCraftButton();
         }
 
-        private void RefreshCraftButton()
-        {
-            craftButton.interactable = !questState.ArtifactCrafted && HasCompleteStack();
-        }
-
-        private bool HasCompleteStack()
-        {
-            int[] slotCounts = new int[slots.Count];
-            for (int i = 0; i < slots.Count; i++)
-            {
-                slotCounts[i] = slots[i].Count;
-            }
-            return ArtifactCraftingService.HasCompleteStack(
+        private bool CanCraft() =>
+            questState.ArtifactResourceCount == QuestProgress.ArtifactResourceRequirement &&
+            ArtifactCraftingService.HasCompleteStack(
                 slotCounts,
                 QuestProgress.ArtifactResourceRequirement);
-        }
 
-        private void RefreshText()
+        private void Refresh()
         {
-            titleText.text = GameLocalization.Get("craft.title");
-            exitHintText.text = GameLocalization.Get("craft.exit_hint");
-            statusText.text = questState.ArtifactCrafted
-                ? GameLocalization.Get("craft.complete")
-                : GameLocalization.FormatQuestCount(
-                    "craft.resources", questState.ArtifactResourceCount,
-                    QuestProgress.ArtifactResourceRequirement);
-            craftButton.GetComponentInChildren<TMP_Text>().text = GameLocalization.Get("craft.button");
+            if (!open)
+            {
+                return;
+            }
+
+            view.SetState(
+                questState.ArtifactCrafted,
+                questState.ArtifactResourceCount,
+                QuestProgress.ArtifactResourceRequirement,
+                CanCraft());
         }
     }
 }

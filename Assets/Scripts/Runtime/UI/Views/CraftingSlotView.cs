@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -11,16 +12,16 @@ namespace SimpleSummon.Runtime
         [SerializeField] private Image icon;
         [SerializeField] private TMP_Text countText;
 
-        private CraftingView owner;
         private Canvas canvas;
         private int count;
         private Vector2 startPosition;
 
         public int Count => count;
 
-        public void Configure(CraftingView craftingView, Canvas rootCanvas)
+        public event Action<CraftingSlotView, CraftingSlotView> MergeRequested;
+
+        public void Configure(Canvas rootCanvas)
         {
-            owner = craftingView;
             canvas = rootCanvas;
         }
 
@@ -63,7 +64,7 @@ namespace SimpleSummon.Runtime
                 : null;
             if (source != null && source != this)
             {
-                owner.TryMerge(source, this);
+                MergeRequested?.Invoke(source, this);
             }
         }
     }

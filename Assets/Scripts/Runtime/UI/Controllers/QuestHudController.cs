@@ -1,45 +1,39 @@
 using SimpleSummon.Domain;
 using SimpleSummon.Network;
-using TMPro;
 using UnityEngine;
 
 namespace SimpleSummon.Runtime
 {
-    public sealed class QuestHudView : MonoBehaviour
+    public sealed class QuestHudController : MonoBehaviour
     {
         [SerializeField] private NetworkQuestState questState;
-        [SerializeField] private TMP_Text healthText;
-        [SerializeField] private TMP_Text bossHeartText;
-        [SerializeField] private TMP_Text resourcesText;
-        [SerializeField] private TMP_Text artifactText;
-        [SerializeField] private TMP_Text fragmentsText;
+        [SerializeField] private QuestHudView view;
 
-        private NetworkPlayer localPlayer;
         private PlayerController localController;
 
         private void OnEnable()
         {
-            questState.Changed += RefreshQuest;
+            questState.Changed += Refresh;
             NetworkPlayer.LocalPlayerChanged += BindLocalPlayer;
             PlayerRegistry.Changed += BindLocalPlayer;
-            GameLocalization.LocaleChanged += RefreshAll;
+            GameLocalization.LocaleChanged += Refresh;
             BindLocalPlayer();
-            RefreshAll();
+            Refresh();
         }
 
         private void OnDisable()
         {
-            questState.Changed -= RefreshQuest;
+            questState.Changed -= Refresh;
             NetworkPlayer.LocalPlayerChanged -= BindLocalPlayer;
             PlayerRegistry.Changed -= BindLocalPlayer;
-            GameLocalization.LocaleChanged -= RefreshAll;
+            GameLocalization.LocaleChanged -= Refresh;
             UnbindLocalPlayer();
         }
 
         private void BindLocalPlayer()
         {
             UnbindLocalPlayer();
-            localPlayer = NetworkPlayer.LocalPlayer;
+            NetworkPlayer localPlayer = NetworkPlayer.LocalPlayer;
             if (localPlayer == null)
             {
                 localPlayer = PlayerRegistry.GetLocalPlayer()?.GetComponent<NetworkPlayer>();
@@ -56,34 +50,30 @@ namespace SimpleSummon.Runtime
 
         private void UnbindLocalPlayer()
         {
-            if (localPlayer != null)
+            if (localController != null)
             {
                 localController.VitalStateChanged -= HandleVitalStateChanged;
             }
-            localPlayer = null;
             localController = null;
         }
 
         private void HandleVitalStateChanged(float health, float _) => RefreshHealth(health);
-        private void RefreshQuest() => RefreshAll();
 
-        private void RefreshAll()
+        private void Refresh()
         {
             RefreshHealth(localController != null ? localController.CurrentHealth : 0f);
-            bossHeartText.text = GameLocalization.FormatQuestFlag("hud.boss_heart", questState.BossHeartCollected);
-            resourcesText.text = GameLocalization.FormatQuestCount(
-                "hud.artifact_resources", questState.ArtifactResourceCount,
-                QuestProgress.ArtifactResourceRequirement);
-            artifactText.text = GameLocalization.FormatQuestFlag("hud.artifact", questState.ArtifactCrafted);
-            fragmentsText.text = GameLocalization.FormatQuestCount(
-                "hud.fragments", questState.CollectedSignFragmentCount,
+            view.SetQuestState(
+                questState.BossHeartCollected,
+                questState.ArtifactResourceCount,
+                QuestProgress.ArtifactResourceRequirement,
+                questState.ArtifactCrafted,
+                questState.CollectedSignFragmentCount,
                 QuestProgress.SignFragmentCount);
         }
 
         private void RefreshHealth(float health)
         {
-            float maximum = localController != null ? localController.MaximumHealth : 0f;
-            healthText.text = GameLocalization.FormatHealth(health, maximum);
+            view.SetHealth(health, localController != null ? localController.MaximumHealth : 0f);
         }
     }
 }
