@@ -5,7 +5,10 @@
     "SimpleSummon.Domain",
     "SimpleSummon.Network",
     "SimpleSummon.Runtime",
-    "Unity.Netcode.Runtime"
+    "Unity.Netcode.Runtime",
+    "Unity.TextMeshPro",
+    "UnityEngine.UI",
+    "Unity.Networking.Transport"
   ],
   "optionalUnityReferences": [
     "TestAssemblies"

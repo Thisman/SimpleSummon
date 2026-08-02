@@ -1,3 +1,4 @@
+using System;
 using SimpleSummon.Domain;
 
 namespace SimpleSummon.Application
@@ -8,7 +9,7 @@ namespace SimpleSummon.Application
 
         public TorchService(TorchModel model)
         {
-            this.model = model;
+            this.model = model ?? throw new ArgumentNullException(nameof(model));
         }
 
         public float Strength => model.Strength;

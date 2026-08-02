@@ -89,5 +89,39 @@ namespace SimpleSummon.Application.Tests
                     distance,
                     out _));
         }
+
+        [Test]
+        public void TryValidate_ContinuationAtExactMinimumDistance_IsAccepted()
+        {
+            Assert.That(SignPointValidationService.TryValidate(
+                Vector2.Zero,
+                new Vector2(0.01f, 0f),
+                false,
+                0.01f,
+                out _), Is.True);
+        }
+
+        [Test]
+        public void TryValidate_ZeroMinimumDistance_AcceptsDuplicate()
+        {
+            Assert.That(SignPointValidationService.TryValidate(
+                Vector2.One,
+                Vector2.One,
+                false,
+                0f,
+                out _), Is.True);
+        }
+
+        [TestCase(float.NaN, 0f)]
+        [TestCase(float.PositiveInfinity, 0f)]
+        public void TryValidate_NonFinitePreviousPoint_ReturnsFalse(float x, float y)
+        {
+            Assert.That(SignPointValidationService.TryValidate(
+                new Vector2(x, y),
+                Vector2.Zero,
+                false,
+                0.01f,
+                out _), Is.False);
+        }
     }
 }

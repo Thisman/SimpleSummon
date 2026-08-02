@@ -1,3 +1,4 @@
+using System;
 using SimpleSummon.Domain;
 
 namespace SimpleSummon.Application
@@ -20,6 +21,11 @@ namespace SimpleSummon.Application
 
         public static bool TakeDamage(UnitModel model, float damage)
         {
+            if (model == null)
+            {
+                throw new ArgumentNullException(nameof(model));
+            }
+
             bool wasDead = model.IsDead;
             model.TakeDamage(damage);
             return !wasDead && model.IsDead;

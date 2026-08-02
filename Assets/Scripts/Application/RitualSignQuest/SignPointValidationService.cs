@@ -27,6 +27,14 @@ namespace SimpleSummon.Application
                 return false;
             }
 
+            if (previousPoint.HasValue &&
+                (!float.IsFinite(previousPoint.Value.X) ||
+                 !float.IsFinite(previousPoint.Value.Y)))
+            {
+                validatedPoint = default;
+                return false;
+            }
+
             validatedPoint = new Vector2(
                 Math.Clamp(submittedPoint.X, 0f, 1f),
                 Math.Clamp(submittedPoint.Y, 0f, 1f));

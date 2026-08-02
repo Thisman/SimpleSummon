@@ -75,5 +75,45 @@ namespace SimpleSummon.Domain.Tests
 
             Assert.That(state.Assignments, Is.Empty);
         }
+
+        [Test]
+        public void Replace_Null_ClearsExistingAssignments()
+        {
+            RitualSignPlateState state = new();
+            state.Replace(new[] { new RitualSignPlateAssignment(10, 3) });
+
+            Assert.That(state.Replace(null), Is.True);
+            Assert.That(state.Assignments, Is.Empty);
+        }
+
+        [Test]
+        public void Replace_SameAssignmentsInDifferentOrder_ReturnsFalse()
+        {
+            RitualSignPlateState state = new();
+            state.Replace(new[]
+            {
+                new RitualSignPlateAssignment(10, 0),
+                new RitualSignPlateAssignment(20, RitualSignPlateState.PlateCount - 1)
+            });
+
+            Assert.That(state.Replace(new[]
+            {
+                new RitualSignPlateAssignment(20, RitualSignPlateState.PlateCount - 1),
+                new RitualSignPlateAssignment(10, 0)
+            }), Is.False);
+        }
+
+        [Test]
+        public void Replace_InvalidOnlySnapshot_ClearsExistingAssignments()
+        {
+            RitualSignPlateState state = new();
+            state.Replace(new[] { new RitualSignPlateAssignment(10, 3) });
+
+            Assert.That(state.Replace(new[]
+            {
+                new RitualSignPlateAssignment(20, -1)
+            }), Is.True);
+            Assert.That(state.Assignments, Is.Empty);
+        }
     }
 }

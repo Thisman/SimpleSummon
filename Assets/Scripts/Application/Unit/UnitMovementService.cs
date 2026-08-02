@@ -22,14 +22,14 @@ namespace SimpleSummon.Application
 
         public static float GetJumpVelocity(float jumpHeight, float gravity)
         {
-            if (jumpHeight < 0f)
+            if (!float.IsFinite(jumpHeight) || jumpHeight < 0f)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(jumpHeight),
                     "Jump height cannot be negative.");
             }
 
-            if (gravity >= 0f)
+            if (!float.IsFinite(gravity) || gravity >= 0f)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(gravity),

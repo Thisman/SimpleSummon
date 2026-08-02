@@ -1,9 +1,35 @@
+using System;
 using NUnit.Framework;
 
 namespace SimpleSummon.Domain.Tests
 {
     public sealed class TorchModelTests
     {
+        [TestCase(-1f, 0f, 0f, 0f)]
+        [TestCase(0f, -1f, 0f, 0f)]
+        [TestCase(0f, 0f, -1f, 0f)]
+        [TestCase(0f, 0f, 0f, -1f)]
+        [TestCase(float.NaN, 0f, 0f, 0f)]
+        [TestCase(float.PositiveInfinity, 0f, 0f, 0f)]
+        public void Constructor_InvalidConfiguration_Throws(
+            float fadeDelay,
+            float recoveryDelay,
+            float fadeRate,
+            float recoveryRate)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new TorchModel(fadeDelay, recoveryDelay, fadeRate, recoveryRate));
+        }
+
+        [Test]
+        public void Constructor_ZeroConfiguration_IsValid()
+        {
+            TorchModel model = new(0f, 0f, 0f, 0f);
+
+            Assert.That(model.Strength, Is.EqualTo(100f));
+            Assert.That(model.Phase, Is.EqualTo(TorchBurnPhase.WaitingToFade));
+        }
+
         [Test]
         public void MovingStartsFadingAfterDelay()
         {
@@ -97,6 +123,39 @@ namespace SimpleSummon.Domain.Tests
             Assert.That(model.TryTake(20), Is.True);
             Assert.That(model.IsHeldBy(20), Is.True);
             Assert.That(model.Strength, Is.EqualTo(100f));
+        }
+
+        [TestCase(-0.1f)]
+        [TestCase(float.NaN)]
+        [TestCase(float.PositiveInfinity)]
+        public void Tick_InvalidDeltaTime_Throws(float deltaTime)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => CreateModel().Tick(true, deltaTime));
+        }
+
+        [Test]
+        public void Tick_ZeroDeltaTime_DoesNothing()
+        {
+            TorchModel model = CreateModel();
+
+            model.Tick(true, 0f);
+
+            Assert.That(model.Strength, Is.EqualTo(100f));
+            Assert.That(model.Phase, Is.EqualTo(TorchBurnPhase.WaitingToFade));
+        }
+
+        [Test]
+        public void Reset_ClearsHolderAndRestoresInitialFlame()
+        {
+            TorchModel model = CreateModel();
+            model.TryTake(10);
+            model.Tick(true, 6f);
+
+            model.Reset();
+
+            Assert.That(model.IsAvailable, Is.True);
+            Assert.That(model.Strength, Is.EqualTo(100f));
+            Assert.That(model.Phase, Is.EqualTo(TorchBurnPhase.WaitingToFade));
         }
 
         private static TorchModel CreateModel() => new(

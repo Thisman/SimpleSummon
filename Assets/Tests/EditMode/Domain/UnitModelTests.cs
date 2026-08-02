@@ -44,6 +44,7 @@ namespace SimpleSummon.Domain.Tests
 
         [TestCase(float.NaN)]
         [TestCase(float.PositiveInfinity)]
+        [TestCase(float.NegativeInfinity)]
         public void Constructor_NonFiniteConfiguration_Throws(float value)
         {
             Assert.Throws<ArgumentOutOfRangeException>(
@@ -88,6 +89,28 @@ namespace SimpleSummon.Domain.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>(
                 () => unit.UpdateAttackCooldown(-0.1f));
+        }
+
+        [TestCase(float.NaN)]
+        [TestCase(float.PositiveInfinity)]
+        [TestCase(float.NegativeInfinity)]
+        public void UpdateAttackCooldown_NonFiniteDeltaTime_Throws(float deltaTime)
+        {
+            UnitModel unit = CreateUnit();
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => unit.UpdateAttackCooldown(deltaTime));
+        }
+
+        [Test]
+        public void UpdateAttackCooldown_AtExactDelay_MakesUnitReady()
+        {
+            UnitModel unit = CreateUnit();
+            unit.TryAttack();
+
+            unit.UpdateAttackCooldown(unit.AttackDelay);
+
+            Assert.That(unit.TryAttack(), Is.True);
         }
 
         [Test]
@@ -159,6 +182,7 @@ namespace SimpleSummon.Domain.Tests
 
         [TestCase(float.NaN)]
         [TestCase(float.PositiveInfinity)]
+        [TestCase(float.NegativeInfinity)]
         public void SetCurrentHealth_NonFiniteValue_Throws(float value)
         {
             UnitModel unit = CreateUnit();
@@ -178,6 +202,27 @@ namespace SimpleSummon.Domain.Tests
 
             Assert.That(unit.CurrentHealth, Is.EqualTo(100f));
             Assert.That(unit.AttackCooldownRemaining, Is.Zero);
+        }
+
+        [Test]
+        public void RestoreHealth_AfterDeath_RevivesAndAllowsAttack()
+        {
+            UnitModel unit = CreateUnit();
+            unit.TakeDamage(unit.MaximumHealth);
+
+            unit.RestoreHealth();
+
+            Assert.That(unit.IsDead, Is.False);
+            Assert.That(unit.TryAttack(), Is.True);
+        }
+
+        [Test]
+        public void ZeroAttackDelay_AllowsConsecutiveAttacks()
+        {
+            UnitModel unit = new(0f, 0f, 0f, 0f, 1f);
+
+            Assert.That(unit.TryAttack(), Is.True);
+            Assert.That(unit.TryAttack(), Is.True);
         }
 
         private static UnitModel CreateUnit()

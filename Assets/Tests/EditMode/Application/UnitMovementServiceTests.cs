@@ -40,6 +40,17 @@ namespace SimpleSummon.Application.Tests
         }
 
         [Test]
+        public void GetCameraRelativeDirection_NonOrthogonalAxes_StillClampsMagnitude()
+        {
+            Vector3 result = UnitMovementService.GetCameraRelativeDirection(
+                Vector2.One,
+                Vector3.UnitZ,
+                Vector3.UnitZ);
+
+            Assert.That(result.Length(), Is.EqualTo(1f).Within(0.0001f));
+        }
+
+        [Test]
         public void GetJumpVelocity_ValidValues_ReturnsRequiredVelocity()
         {
             float result = UnitMovementService.GetJumpVelocity(2f, -9.81f);
@@ -68,6 +79,16 @@ namespace SimpleSummon.Application.Tests
         {
             Assert.Throws<ArgumentOutOfRangeException>(
                 () => UnitMovementService.GetJumpVelocity(1f, gravity));
+        }
+
+        [TestCase(float.NaN, -9.81f)]
+        [TestCase(float.PositiveInfinity, -9.81f)]
+        [TestCase(1f, float.NaN)]
+        [TestCase(1f, float.NegativeInfinity)]
+        public void GetJumpVelocity_NonFiniteInput_Throws(float height, float gravity)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => UnitMovementService.GetJumpVelocity(height, gravity));
         }
 
         private static void AssertVector(Vector3 actual, Vector3 expected)

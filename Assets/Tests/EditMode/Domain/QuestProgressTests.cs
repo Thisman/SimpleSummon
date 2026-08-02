@@ -41,5 +41,20 @@ namespace SimpleSummon.Domain.Tests
             Assert.That(progress.Ingredients.GreenBottleCount, Is.EqualTo(1));
             Assert.That(progress.Ingredients.BrownBottleCount, Is.EqualTo(1));
         }
+
+        [Test]
+        public void Apply_CanResetFlagsAndContinueFromReplicatedCounts()
+        {
+            QuestProgress progress = new();
+            progress.Apply(true, true, 2, 3);
+
+            progress.Apply(false, false, 4, 5);
+            progress.Ingredients.Add(IngredientType.BottleGreen);
+
+            Assert.That(progress.BossHeartCollected, Is.False);
+            Assert.That(progress.SignDrawn, Is.False);
+            Assert.That(progress.Ingredients.GreenBottleCount, Is.EqualTo(5));
+            Assert.That(progress.Ingredients.BrownBottleCount, Is.EqualTo(5));
+        }
     }
 }

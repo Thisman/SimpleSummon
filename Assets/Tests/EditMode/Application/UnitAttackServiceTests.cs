@@ -57,6 +57,24 @@ namespace SimpleSummon.Application.Tests
                 () => UnitAttackService.TryAttack(null, 0f, true));
         }
 
+        [TestCase(-0.1f)]
+        [TestCase(float.NaN)]
+        [TestCase(float.PositiveInfinity)]
+        public void TryAttack_InvalidDeltaTime_Throws(float deltaTime)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => UnitAttackService.TryAttack(CreateUnit(), deltaTime, false));
+        }
+
+        [Test]
+        public void TryAttack_AtExactCooldownBoundary_Succeeds()
+        {
+            UnitModel unit = CreateUnit();
+            unit.TryAttack();
+
+            Assert.That(UnitAttackService.TryAttack(unit, unit.AttackDelay, true), Is.True);
+        }
+
         private static UnitModel CreateUnit()
         {
             return new UnitModel(4f, 2f, 0.5f, 10f, 100f);

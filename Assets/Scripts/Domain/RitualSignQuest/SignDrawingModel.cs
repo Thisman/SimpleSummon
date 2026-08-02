@@ -53,6 +53,11 @@ namespace SimpleSummon.Domain
 
         public void ReplacePoints(IEnumerable<SignStrokePoint> values)
         {
+            if (values == null)
+            {
+                throw new System.ArgumentNullException(nameof(values));
+            }
+
             points.Clear();
             points.AddRange(values);
         }

@@ -9,7 +9,7 @@ namespace SimpleSummon.Network
 
         public NetworkRateLimiter(double requestsPerSecond)
         {
-            if (requestsPerSecond <= 0d)
+            if (!double.IsFinite(requestsPerSecond) || requestsPerSecond <= 0d)
             {
                 throw new System.ArgumentOutOfRangeException(nameof(requestsPerSecond));
             }
@@ -19,6 +19,11 @@ namespace SimpleSummon.Network
 
         public bool TryAcquire(NetworkRequestContext context)
         {
+            if (!double.IsFinite(context.ServerTime))
+            {
+                throw new System.ArgumentOutOfRangeException(nameof(context));
+            }
+
             if (nextAllowedTimes.TryGetValue(
                     context.SenderClientId,
                     out double nextAllowedTime) &&
