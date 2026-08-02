@@ -27,6 +27,10 @@ namespace SimpleSummon.Network
         public event Action<float, bool> VitalStateChanged;
         public event Action DamageReceived;
         public event Action<string> NicknameChanged;
+        public static event Action LocalPlayerChanged;
+        public static NetworkPlayer LocalPlayer { get; private set; }
+
+        public float CurrentHealth => health.Value;
 
         private bool IsOffline =>
             NetworkManager.Singleton == null ||
@@ -46,6 +50,8 @@ namespace SimpleSummon.Network
             nickname.OnValueChanged += HandleNicknameChanged;
             if (IsOwner)
             {
+                LocalPlayer = this;
+                LocalPlayerChanged?.Invoke();
                 SetNickname(NicknameStorage.Load());
             }
             RoleChanged?.Invoke();
@@ -59,6 +65,11 @@ namespace SimpleSummon.Network
             dead.OnValueChanged -= HandleDeadChanged;
             damageSequence.OnValueChanged -= HandleDamageSequenceChanged;
             nickname.OnValueChanged -= HandleNicknameChanged;
+            if (LocalPlayer == this)
+            {
+                LocalPlayer = null;
+                LocalPlayerChanged?.Invoke();
+            }
             RoleChanged?.Invoke();
         }
 

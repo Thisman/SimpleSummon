@@ -29,6 +29,9 @@ namespace SimpleSummon.Runtime
 
         [SerializeField] private Animator animator;
         [SerializeField] private DamageFlash damageFlash;
+        [SerializeField] private Renderer[] visualRenderers;
+        [SerializeField] private EnemyLootCollectable loot;
+        [SerializeField] private NetworkQuestState questState;
 
         private EnemySettings settings;
         private NavMeshAgent agent;
@@ -37,24 +40,32 @@ namespace SimpleSummon.Runtime
         private State state;
         private PlayerController player;
         private NetworkEnemyState networkState;
+        private bool bossWeakened;
 
         public bool IsDead => model.IsDead;
+        private float EffectiveAttackRadius => settings.AttackRadius *
+                                               Mathf.Max(transform.lossyScale.x, transform.lossyScale.z);
 
         private void Awake()
         {
             settings = GetComponent<EnemySettings>();
             networkState = GetComponent<NetworkEnemyState>();
             agent = GetComponent<NavMeshAgent>();
+            float statMultiplier = settings.IsBoss &&
+                                   (questState == null || !questState.ArtifactCrafted)
+                ? settings.BossStatMultiplier
+                : 1f;
+            bossWeakened = settings.IsBoss && statMultiplier <= 1f;
             model = new UnitModel(
                 settings.MovementSpeed,
                 0f,
                 settings.AttackDelay,
-                settings.Damage,
-                settings.MaximumHealth);
+                settings.Damage * statMultiplier,
+                settings.MaximumHealth * statMultiplier);
 
             homePosition = transform.position;
             agent.speed = model.MovementSpeed;
-            agent.stoppingDistance = settings.AttackRadius;
+            agent.stoppingDistance = EffectiveAttackRadius;
         }
 
         private void OnEnable()
@@ -62,6 +73,12 @@ namespace SimpleSummon.Runtime
             if (networkState != null)
             {
                 networkState.StateChanged += ApplyReplicatedState;
+                networkState.LootStateChanged += ApplyReplicatedLootState;
+            }
+            if (settings.IsBoss && questState != null)
+            {
+                questState.Changed += ApplyArtifactWeakening;
+                ApplyArtifactWeakening();
             }
             TrySelectPlayer();
         }
@@ -71,6 +88,11 @@ namespace SimpleSummon.Runtime
             if (networkState != null)
             {
                 networkState.StateChanged -= ApplyReplicatedState;
+                networkState.LootStateChanged -= ApplyReplicatedLootState;
+            }
+            if (questState != null)
+            {
+                questState.Changed -= ApplyArtifactWeakening;
             }
             SetPlayer(null);
         }
@@ -97,9 +119,16 @@ namespace SimpleSummon.Runtime
                 : float.PositiveInfinity;
             float distanceFromHome = Vector3.Distance(transform.position, homePosition);
 
-            if (player == null || player.IsDead || distanceFromHome > settings.ReturnRadius)
+            bool hasLivingTarget = player != null && !player.IsDead;
+            if (distanceFromHome > settings.ReturnRadius ||
+                !hasLivingTarget && distanceFromHome > agent.stoppingDistance)
             {
                 BeginReturn();
+            }
+            else if (!hasLivingTarget && state != State.Idle)
+            {
+                state = State.Idle;
+                StopMoving();
             }
 
             switch (state)
@@ -115,7 +144,7 @@ namespace SimpleSummon.Runtime
                     break;
 
                 case State.Chase:
-                    if (distanceToPlayer <= settings.AttackRadius)
+                    if (distanceToPlayer <= EffectiveAttackRadius)
                     {
                         state = State.Attack;
                         StopMoving();
@@ -128,7 +157,7 @@ namespace SimpleSummon.Runtime
 
                 case State.Attack:
                     FacePlayer();
-                    if (distanceToPlayer > settings.AttackRadius)
+                    if (distanceToPlayer > EffectiveAttackRadius)
                     {
                         state = State.Chase;
                     }
@@ -139,7 +168,13 @@ namespace SimpleSummon.Runtime
                     break;
 
                 case State.Return:
-                    if (Vector3.Distance(transform.position, homePosition) <= agent.stoppingDistance)
+                    if (hasLivingTarget &&
+                        distanceFromHome <= settings.ReturnRadius &&
+                        distanceToPlayer <= settings.DetectionRadius)
+                    {
+                        state = State.Chase;
+                    }
+                    else if (distanceFromHome <= agent.stoppingDistance)
                     {
                         state = State.Idle;
                         StopMoving();
@@ -174,7 +209,8 @@ namespace SimpleSummon.Runtime
             Vector3 direction = player.transform.position - transform.position;
             direction.y = 0f;
 
-            if (direction.sqrMagnitude <= settings.AttackRadius * settings.AttackRadius &&
+            float attackRadius = EffectiveAttackRadius;
+            if (direction.sqrMagnitude <= attackRadius * attackRadius &&
                 direction.sqrMagnitude > 0f &&
                 Vector3.Dot(transform.forward, direction.normalized) >= MinimumAttackDirectionDot)
             {
@@ -221,7 +257,21 @@ namespace SimpleSummon.Runtime
                 return;
             }
 
-            networkState?.Publish(true);
+            if (settings.IsBoss)
+            {
+                questState?.Collect(QuestCollectableType.BossHeart, 0);
+            }
+
+            foreach (Renderer visualRenderer in visualRenderers)
+            {
+                if (visualRenderer != null)
+                {
+                    visualRenderer.enabled = false;
+                }
+            }
+
+            networkState?.PublishDeathCompleted(!settings.IsBoss && loot != null);
+            loot?.RefreshVisibility();
         }
 
         private void ApplyReplicatedState(bool isDead)
@@ -238,6 +288,48 @@ namespace SimpleSummon.Runtime
                 GetComponent<CapsuleCollider>().enabled = false;
                 animator.SetFloat(MovementSpeedId, 0f);
                 animator.SetTrigger(DeathId);
+            }
+
+            if (networkState.Disappeared)
+            {
+                HideVisuals();
+            }
+        }
+
+        private void ApplyReplicatedLootState()
+        {
+            if (networkState != null && networkState.Disappeared)
+            {
+                HideVisuals();
+            }
+        }
+
+        private void ApplyArtifactWeakening()
+        {
+            if (!settings.IsBoss || bossWeakened || !questState.ArtifactCrafted || model.IsDead)
+            {
+                return;
+            }
+
+            float currentHealth = model.CurrentHealth;
+            model = new UnitModel(
+                settings.MovementSpeed,
+                0f,
+                settings.AttackDelay,
+                settings.Damage,
+                settings.MaximumHealth);
+            model.SetCurrentHealth(Mathf.Min(currentHealth, model.MaximumHealth));
+            bossWeakened = true;
+        }
+
+        private void HideVisuals()
+        {
+            foreach (Renderer visualRenderer in visualRenderers)
+            {
+                if (visualRenderer != null)
+                {
+                    visualRenderer.enabled = false;
+                }
             }
         }
 
@@ -318,7 +410,8 @@ namespace SimpleSummon.Runtime
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(origin, currentSettings.DetectionRadius);
             Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(transform.position, currentSettings.AttackRadius);
+            float scale = Mathf.Max(transform.lossyScale.x, transform.lossyScale.z);
+            Gizmos.DrawWireSphere(transform.position, currentSettings.AttackRadius * scale);
             Gizmos.color = Color.cyan;
             Gizmos.DrawWireSphere(origin, currentSettings.ReturnRadius);
         }

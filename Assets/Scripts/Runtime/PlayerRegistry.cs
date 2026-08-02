@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using SimpleSummon.Network;
 using UnityEngine;
@@ -8,17 +9,23 @@ namespace SimpleSummon.Runtime
     {
         private static readonly List<PlayerController> players = new();
 
+        public static event Action Changed;
+
         public static void Register(PlayerController player)
         {
             if (!players.Contains(player))
             {
                 players.Add(player);
+                Changed?.Invoke();
             }
         }
 
         public static void Unregister(PlayerController player)
         {
-            players.Remove(player);
+            if (players.Remove(player))
+            {
+                Changed?.Invoke();
+            }
         }
 
         public static PlayerController GetClosestLiving(Vector3 position)

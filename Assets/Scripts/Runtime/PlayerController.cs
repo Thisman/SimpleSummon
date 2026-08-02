@@ -57,8 +57,11 @@ namespace SimpleSummon.Runtime
         private readonly RaycastHit[] aimHits = new RaycastHit[AimHitBufferSize];
 
         public event Action Respawned;
+        public event Action<float, float> VitalStateChanged;
 
         public bool IsDead => model.IsDead;
+        public float CurrentHealth => model.CurrentHealth;
+        public float MaximumHealth => model.MaximumHealth;
 
         private void Awake()
         {
@@ -95,6 +98,7 @@ namespace SimpleSummon.Runtime
             }
 
             RefreshLocalRole();
+            VitalStateChanged?.Invoke(model.CurrentHealth, model.MaximumHealth);
         }
 
         private void OnDisable()
@@ -265,6 +269,7 @@ namespace SimpleSummon.Runtime
             }
 
             model.TakeDamage(damage);
+            VitalStateChanged?.Invoke(model.CurrentHealth, model.MaximumHealth);
             networkPlayer?.PublishDamage();
             networkPlayer?.PublishVitalState(model.CurrentHealth, model.IsDead);
             damageFlash.Play();
@@ -321,6 +326,7 @@ namespace SimpleSummon.Runtime
                 verticalVelocity = 0f;
             }
             model.RestoreHealth();
+            VitalStateChanged?.Invoke(model.CurrentHealth, model.MaximumHealth);
             networkPlayer?.PublishVitalState(model.CurrentHealth, model.IsDead);
             animator.SetTrigger(RespawnId);
             Respawned?.Invoke();
@@ -382,6 +388,7 @@ namespace SimpleSummon.Runtime
             }
 
             model.SetCurrentHealth(currentHealth);
+            VitalStateChanged?.Invoke(model.CurrentHealth, model.MaximumHealth);
             if (!replicatedStateInitialized || replicatedDead != isDead)
             {
                 if (isDead)

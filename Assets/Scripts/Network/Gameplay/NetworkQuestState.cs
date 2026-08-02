@@ -8,6 +8,8 @@ namespace SimpleSummon.Network
     {
         private readonly NetworkVariable<byte> signFragments = new();
         private readonly NetworkVariable<bool> bossHeartCollected = new();
+        private readonly NetworkVariable<int> artifactResourceCount = new();
+        private readonly NetworkVariable<bool> artifactCrafted = new();
         private readonly NetworkVariable<bool> signDrawn = new();
         private readonly QuestProgress progress = new();
 
@@ -20,12 +22,20 @@ namespace SimpleSummon.Network
         public bool BossHeartCollected => IsSpawned
             ? bossHeartCollected.Value
             : progress.BossHeartCollected;
+        public int ArtifactResourceCount => IsSpawned
+            ? artifactResourceCount.Value
+            : progress.ArtifactResourceCount;
+        public bool ArtifactCrafted => IsSpawned
+            ? artifactCrafted.Value
+            : progress.ArtifactCrafted;
         public bool SignDrawn => IsSpawned ? signDrawn.Value : progress.SignDrawn;
 
         public override void OnNetworkSpawn()
         {
             signFragments.OnValueChanged += HandleFragmentsChanged;
             bossHeartCollected.OnValueChanged += HandleBossHeartChanged;
+            artifactResourceCount.OnValueChanged += HandleArtifactResourcesChanged;
+            artifactCrafted.OnValueChanged += HandleArtifactCraftedChanged;
             signDrawn.OnValueChanged += HandleSignDrawnChanged;
             if (IsServer)
             {
@@ -42,6 +52,8 @@ namespace SimpleSummon.Network
         {
             signFragments.OnValueChanged -= HandleFragmentsChanged;
             bossHeartCollected.OnValueChanged -= HandleBossHeartChanged;
+            artifactResourceCount.OnValueChanged -= HandleArtifactResourcesChanged;
+            artifactCrafted.OnValueChanged -= HandleArtifactCraftedChanged;
             signDrawn.OnValueChanged -= HandleSignDrawnChanged;
         }
 
@@ -76,6 +88,55 @@ namespace SimpleSummon.Network
             }
         }
 
+        public bool CollectArtifactResource()
+        {
+            if (IsSpawned && !IsServer)
+            {
+                return false;
+            }
+
+            bool changed = progress.CollectArtifactResource();
+            if (changed)
+            {
+                Publish();
+            }
+
+            return changed;
+        }
+
+        public bool CraftArtifact()
+        {
+            if (IsSpawned && !IsServer)
+            {
+                return false;
+            }
+
+            bool changed = progress.CraftArtifact();
+            if (changed)
+            {
+                Publish();
+            }
+
+            return changed;
+        }
+
+        public void RequestCraftArtifact()
+        {
+            if (!IsSpawned || IsServer)
+            {
+                CraftArtifact();
+                return;
+            }
+
+            CraftArtifactRpc();
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void CraftArtifactRpc()
+        {
+            CraftArtifact();
+        }
+
         private bool IsSignFragmentCollected(int id)
         {
             if (id < 0 || id >= QuestProgress.SignFragmentCount)
@@ -92,6 +153,8 @@ namespace SimpleSummon.Network
             {
                 signFragments.Value = progress.SignFragmentMask;
                 bossHeartCollected.Value = progress.BossHeartCollected;
+                artifactResourceCount.Value = progress.ArtifactResourceCount;
+                artifactCrafted.Value = progress.ArtifactCrafted;
                 signDrawn.Value = progress.SignDrawn;
             }
             else
@@ -105,7 +168,9 @@ namespace SimpleSummon.Network
             progress.Apply(
                 signFragments.Value,
                 bossHeartCollected.Value,
-                signDrawn.Value);
+                signDrawn.Value,
+                artifactResourceCount.Value,
+                artifactCrafted.Value);
         }
 
         private void HandleFragmentsChanged(byte _, byte __)
@@ -121,6 +186,18 @@ namespace SimpleSummon.Network
         }
 
         private void HandleSignDrawnChanged(bool _, bool __)
+        {
+            ApplyReplicatedState();
+            Changed?.Invoke();
+        }
+
+        private void HandleArtifactResourcesChanged(int _, int __)
+        {
+            ApplyReplicatedState();
+            Changed?.Invoke();
+        }
+
+        private void HandleArtifactCraftedChanged(bool _, bool __)
         {
             ApplyReplicatedState();
             Changed?.Invoke();

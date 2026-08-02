@@ -50,6 +50,20 @@ namespace SimpleSummon.Runtime
             ["game.draw_sign"] = ("Нарисуйте знак призыва", "Draw the summoning sign"),
             ["game.instructions"] = ("Для призыва нужен\n\n- Знак призыва\n- Сердце Босса\n- Чаша маны\n- to be continue\n- to be continue ", "The ritual requires\n\n- A summoning sign\n- The Boss's heart\n- A bowl of mana\n- to be continued\n- to be continued"),
             ["game.exit_reading"] = ("Нажмите Esc чтобы выйти из просмотра", "Press Esc to stop reading"),
+            ["hud.health"] = ("Здоровье", "Health"),
+            ["hud.boss_heart"] = ("Сердце босса", "Boss heart"),
+            ["hud.artifact_resources"] = ("Ресурсы артефакта", "Artifact resources"),
+            ["hud.artifact"] = ("Артефакт", "Artifact"),
+            ["hud.fragments"] = ("Фрагменты", "Fragments"),
+            ["hud.yes"] = ("Есть", "Yes"),
+            ["hud.no"] = ("Нет", "No"),
+            ["craft.title"] = ("Создание артефакта", "Craft the artifact"),
+            ["craft.hint"] = ("Перетащите все ресурсы в одну ячейку\nEsc — выйти", "Drag all resources into one slot\nEsc — exit"),
+            ["craft.exit_hint"] = ("Нажмите Esc, чтобы выйти из крафта", "Press Esc to exit crafting"),
+            ["craft.resources"] = ("Ресурсы", "Resources"),
+            ["craft.button"] = ("Скрафтить", "Craft"),
+            ["craft.complete"] = ("Артефакт создан", "Artifact crafted"),
+            ["interaction.craft"] = ("Зажмите E, чтобы создать артефакт", "Hold E to craft the artifact"),
             ["interaction.start_summon"] = ("Зажмите E, чтобы начать призыв", "Hold E to begin the summoning"),
             ["interaction.return_lab"] = ("Нажмите Е, чтобы подняться из подземелья", "Press E to return to the laboratory"),
             ["interaction.enter_dungeon"] = ("Нажмите Е, чтобы спуститься в подземелье", "Press E to enter the dungeon"),
@@ -111,6 +125,15 @@ namespace SimpleSummon.Runtime
             SelectedCode == EnglishLocaleCode
                 ? $"Collected {collected} of {total} fragments\nPress Esc to stop assembling the sign"
                 : $"Собрано {collected} из {total} фрагментов\nНажмите Esc чтобы выйти из сборки знака";
+
+        public static string FormatHealth(float current, float maximum) =>
+            $"{Get("hud.health")}: {Mathf.CeilToInt(current)} / {Mathf.CeilToInt(maximum)}";
+
+        public static string FormatQuestFlag(string key, bool value) =>
+            $"{Get(key)}: {Get(value ? "hud.yes" : "hud.no")}";
+
+        public static string FormatQuestCount(string key, int current, int total) =>
+            $"{Get(key)}: {current} / {total}";
 
         public static bool TryGetKey(string value, out string key)
         {

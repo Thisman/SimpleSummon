@@ -1,22 +1,16 @@
-using SimpleSummon.Domain;
 using SimpleSummon.Network;
-using Unity.Netcode;
 using UnityEngine;
 
 namespace SimpleSummon.Runtime
 {
     [RequireComponent(typeof(Collider))]
-    public sealed class CollectableItem : MonoBehaviour
+    public sealed class EnemyLootCollectable : MonoBehaviour
     {
-        [SerializeField] private QuestCollectableType type;
-        [SerializeField, Range(0, QuestProgress.SignFragmentCount - 1)]
-        private int signFragmentId;
+        [SerializeField] private NetworkEnemyState enemyState;
         [SerializeField] private NetworkQuestState questState;
-
-        [Header("Idle Animation")]
         [SerializeField, Min(0f)] private float bobAmplitude = 0.15f;
         [SerializeField, Min(0f)] private float bobFrequency = 1f;
-        [SerializeField] private Vector3 rotationAxes = Vector3.forward;
+        [SerializeField] private Vector3 rotationAxes = Vector3.up;
         [SerializeField] private float rotationSpeed = 45f;
 
         private Collider trigger;
@@ -31,40 +25,39 @@ namespace SimpleSummon.Runtime
             initialLocalRotation = transform.localRotation;
         }
 
-        private void Update()
-        {
-            float bobOffset = Mathf.Sin(Time.time * bobFrequency * Mathf.PI * 2f) * bobAmplitude;
-            transform.localPosition = initialLocalPosition + Vector3.up * bobOffset;
-            transform.localRotation = initialLocalRotation *
-                                      Quaternion.Euler(rotationAxes.normalized * rotationSpeed * Time.time);
-        }
-
         private void OnEnable()
         {
-            questState.Changed += RefreshVisibility;
+            enemyState.LootStateChanged += RefreshVisibility;
             RefreshVisibility();
         }
 
         private void OnDisable()
         {
-            questState.Changed -= RefreshVisibility;
+            enemyState.LootStateChanged -= RefreshVisibility;
+        }
+
+        private void Update()
+        {
+            float bob = Mathf.Sin(Time.time * bobFrequency * Mathf.PI * 2f) * bobAmplitude;
+            transform.localPosition = initialLocalPosition + Vector3.up * bob;
+            transform.localRotation = initialLocalRotation *
+                                      Quaternion.Euler(rotationAxes.normalized * rotationSpeed * Time.time);
         }
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.GetComponentInParent<PlayerController>() == null ||
-                other.GetComponentInParent<NetworkPlayer>() is not NetworkPlayer player ||
-                !player.CanRunSimulation)
+            NetworkPlayer player = other.GetComponentInParent<NetworkPlayer>();
+            if (player == null || !player.CanRunSimulation || !enemyState.TryCollectLoot())
             {
                 return;
             }
 
-            questState.Collect(type, signFragmentId);
+            questState.CollectArtifactResource();
         }
 
-        private void RefreshVisibility()
+        public void RefreshVisibility()
         {
-            bool visible = !questState.IsCollected(type, signFragmentId);
+            bool visible = enemyState.LootAvailable;
             trigger.enabled = visible;
             foreach (Renderer itemRenderer in GetComponentsInChildren<Renderer>(true))
             {

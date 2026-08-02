@@ -144,6 +144,7 @@ namespace SimpleSummon.Runtime
             summonButton.onClick.AddListener(Finish);
             summonButton.interactable = ritual.PointCount > 1;
             summonContainer.SetActive(true);
+            hud.EnterModalMode();
 
             playerController.SetLocalInputEnabled(false);
             playerController.StopHorizontalMovement();
@@ -171,6 +172,7 @@ namespace SimpleSummon.Runtime
             drawingMap.Disable();
             summonButton.onClick.RemoveListener(Finish);
             summonContainer.SetActive(false);
+            LocalPlayerHud.Instance?.ExitModalMode();
             signGraphic.SetRitual(null);
 
             lookController.enabled = true;

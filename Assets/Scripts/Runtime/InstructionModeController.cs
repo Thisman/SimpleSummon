@@ -98,6 +98,7 @@ namespace SimpleSummon.Runtime
             cameraTransform.localScale = instruction.CameraScale;
 
             SetInstructionPanelActive(true);
+            LocalPlayerHud.Instance?.EnterModalMode();
             SetPlayerRenderingOff(true);
             InteractiveMarker.SetMarkersVisible(false);
             exitInput.Enable();
@@ -107,6 +108,7 @@ namespace SimpleSummon.Runtime
         {
             exitInput.Disable();
             SetInstructionPanelActive(false);
+            LocalPlayerHud.Instance?.ExitModalMode();
             SetPlayerRenderingOff(false);
             InteractiveMarker.SetMarkersVisible(true);
             activeInstruction = null;

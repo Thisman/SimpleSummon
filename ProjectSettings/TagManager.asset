@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 3
   tags:
   - Interactive
+  - Boss
   layers:
   - Default
   - TransparentFX

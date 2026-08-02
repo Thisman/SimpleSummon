@@ -65,6 +65,7 @@ namespace SimpleSummon.Runtime
             puzzle = target; container = hud.SignPuzzleContainer; view = hud.SignPuzzleView;
             selectedFragment = FindFirstFragment();
             container.SetActive(true); view.SetPuzzle(puzzle); view.SetSelectedFragment(selectedFragment);
+            hud.EnterModalMode();
             playerController.SetLocalInputEnabled(false); playerController.StopHorizontalMovement();
             interactionController.SetLocalInputEnabled(false); lookController.enabled = false;
             map.Enable(); Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
@@ -74,6 +75,7 @@ namespace SimpleSummon.Runtime
         {
             NetworkSignPuzzle previous = puzzle; puzzle = null; selectedFragment = SignPuzzleState.Empty; map.Disable();
             view.SetPuzzle(null); container.SetActive(false);
+            LocalPlayerHud.Instance?.ExitModalMode();
             lookController.enabled = true; interactionController.SetLocalInputEnabled(true); playerController.SetLocalInputEnabled(true);
             Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false;
             if (release) previous.RequestRelease();
