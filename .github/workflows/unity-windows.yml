@@ -21,7 +21,7 @@ env:
 
 jobs:
   test:
-    name: EditMode tests
+    name: Tests and coverage
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -41,7 +41,7 @@ jobs:
             Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-tests-
             Library-${{ runner.os }}-${{ env.UNITY_VERSION }}-
 
-      - name: Run EditMode tests
+      - name: Run EditMode and PlayMode tests with coverage
         id: tests
         uses: game-ci/unity-test-runner@0ff419b913a3630032cbe0de48a0099b5a9f0ed9 # v4
         env:
@@ -50,10 +50,16 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
-          testMode: EditMode
+          testMode: All
           artifactsPath: test-results
           githubToken: ${{ secrets.GITHUB_TOKEN }}
-          checkName: Unity EditMode tests
+          checkName: Unity tests
+          coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+SimpleSummon.Domain,+SimpleSummon.Application,+SimpleSummon.Runtime,+SimpleSummon.Network'
+
+      - name: Add coverage to job summary
+        if: always()
+        shell: pwsh
+        run: ./.github/scripts/Write-CoverageSummary.ps1 -CoverageDirectory '${{ steps.tests.outputs.coveragePath }}'
 
       - name: Upload test results
         if: always()
@@ -63,6 +69,15 @@ jobs:
           path: test-results
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: unity-coverage-${{ github.run_number }}
+          path: ${{ steps.tests.outputs.coveragePath }}
+          if-no-files-found: warn
+          retention-days: 30
 
   build:
     name: Production Windows x64
